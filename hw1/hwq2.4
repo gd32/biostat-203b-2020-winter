@@ -1,0 +1,13 @@
+#!/bin/bash
+
+head /home/203bdata/mimic-iii/ADMISSIONS.csv
+
+awk 'END { print NR }' /home/203bdata/mimic-iii/ADMISSIONS.csv
+
+awk '{print $2}' /home/203bdata/mimic-iii/ADMISSIONS.csv | sort | uniq | wc -l
+
+awk -F ',' '{print $10}' /home/203bdata/mimic-iii/ADMISSIONS.csv | sort | uniq
+awk -F ',' '{print $11}' /home/203bdata/mimic-iii/ADMISSIONS.csv | sort | uniq
+awk -F ',' '{print $12}' /home/203bdata/mimic-iii/ADMISSIONS.csv | sort | uniq
+awk -F ',' '{print $13}' /home/203bdata/mimic-iii/ADMISSIONS.csv | sort | uniq
+awk -F ',' '{print $14}' /home/203bdata/mimic-iii/ADMISSIONS.csv | sort | uniq

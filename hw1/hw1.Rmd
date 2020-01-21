@@ -1,28 +1,65 @@
 ---
-title: "hw1"
-output: html_document
+title: "BIOSTAT 203B HW1"
+author: "George Dewey"
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+### Question 2.3
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+The provided bash code:
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```
+for datafile in /home/203bdata/mimic-iii/*.csv
+  do
+    ls $datafile
+  done
 ```
 
-## Including Plots
+Provides the direct file path of the files located in the /home/203bdata/mimic-iii/ directory.
 
-You can also embed plots, for example:
+The number of lines in each csv file can can be generated with the following code:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```
+for datafile in /home/203bdata/mimic-iii/*.csv
+  do
+    awk 'END { print NR }' $datafile
+  done
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+which returns:
+
+```
+58977
+34500
+7568
+1048576
+573147
+4485938
+135
+651048
+14568
+3883
+12488
+754
+125558
+61533
+17527936
+3618992
+27854056
+631727
+91691299
+4349219
+46521
+4156451
+258067
+240096
+73344
+261898
+```
+

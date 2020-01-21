@@ -1,6 +1,6 @@
 ---
 title: "BIOSTAT 203B HW1"
-author: "George Dewey"
+author: "George Dewey UID: 704528320"
 output:
   html_document: default
   pdf_document: default
@@ -62,4 +62,11 @@ which returns:
 73344
 261898
 ```
+### Question 2.4
+
+Display the first few lines of ADMISSIONS.csv with: `head /home/203bdata/mimic-iii/ADMISSIONS.csv`
+
+From `awk 'END { print NR }' /home/203bdata/mimic-iii/ADMISSIONS.csv`, there are **58977** lines in ADMISSIONS.csv.
+
+
 

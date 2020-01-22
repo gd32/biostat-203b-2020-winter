@@ -9,6 +9,24 @@ set.seed(seed)
 mseSampAvg = 0
 msePrimeAvg = 0
 
+## check if a given integer is prime
+isPrime = function(n) {
+  if (n <= 3) {
+    return (TRUE)
+  }
+  if (any((n %% 2:floor(sqrt(n))) == 0)) {
+    return (FALSE)
+  }
+  return (TRUE)
+}
+
+## estimate mean only using observation with prime indices
+estMeanPrimes = function (x) {
+  n = length(x)
+  ind = sapply(1:n, isPrime)
+  return (mean(x[ind]))
+}
+
 for (r in 1:rep){
   # parse distribution information
   if (dist == "gaussian"){
@@ -27,24 +45,6 @@ for (r in 1:rep){
   }
   mseSampAvg = mseSampAvg + mean(x)^2
   msePrimeAvg = msePrimeAvg + estMeanPrimes(x)^2
-}
-
-## check if a given integer is prime
-isPrime = function(n) {
-  if (n <= 3) {
-    return (TRUE)
-  }
-  if (any((n %% 2:floor(sqrt(n))) == 0)) {
-    return (FALSE)
-  }
-  return (TRUE)
-}
-
-## estimate mean only using observation with prime indices
-estMeanPrimes = function (x) {
-  n = length(x)
-  ind = sapply(1:n, isPrime)
-  return (mean(x[ind]))
 }
 
 print(mseSampAvg/rep)

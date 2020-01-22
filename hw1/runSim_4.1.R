@@ -1,4 +1,3 @@
-## parsing command arguments
 for (arg in commandArgs(TRUE)) {
   eval(parse(text=arg))
 }
@@ -12,19 +11,22 @@ msePrimeAvg = 0
 
 for (r in 1:rep){
   # parse distribution information
-  if (dist == 'gaussian'){
+  if (dist == "gaussian"){
     # simulate data
     x=rnorm(n)
   }
-  else if (dist == 't1'){
-      x = rt(n, df=1)
+  else if (dist == "t1"){
+    x =rt(n, df=1)
   }
-  else if (dist == 't5'){
-    x = rt(n, df=5)
+  else if (dist == "t5"){
+    x =rt(n, df=5)
   }
-  else{
+  else {
+    # print error message if wrong distribution entered
     stop("Wrong distribution specified. Try 'gaussian', 't1', or 't5'")
   }
+  mseSampAvg = mseSampAvg + mean(x)^2
+  msePrimeAvg = msePrimeAvg + estMeanPrimes(x)^2
 }
 
 ## check if a given integer is prime
@@ -44,9 +46,6 @@ estMeanPrimes = function (x) {
   ind = sapply(1:n, isPrime)
   return (mean(x[ind]))
 }
-
-mseSampAvg = mseSampAvg + mean(x)^2
-msePrimeAvg = msePrimeAvg + estMeanPrimes(x)^2
 
 print(mseSampAvg/rep)
 print(msePrimeAvg/rep)

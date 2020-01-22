@@ -7,9 +7,6 @@ for (arg in commandArgs(TRUE)) {
 nVals = seq(100, 500, by=100)
 distTypes = c("gaussian", "t1", "t5")
 
-seed=203
-rep=100
-
 for (dist in distTypes){
   for (n in nVals) {
     arg = paste("n=", n, " dist=", shQuote(shQuote(dist)), " seed=", seed, " rep=", rep, sep="")

@@ -34,10 +34,10 @@ for (r in 1:rep){
     x=rnorm(n)
   }
   else if (dist == "t1"){
-    x =rt(n, df=1)
+    x = rt(n, df=1)
   }
   else if (dist == "t5"){
-    x =rt(n, df=5)
+    x = rt(n, df=5)
   }
   else {
     # print error message if wrong distribution entered

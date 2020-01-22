@@ -55,7 +55,7 @@ To obtain the possible values for each category, we can use
 ```{bash, eval=FALSE}
 awk -F ',' '{if (NR!=1) {print $N}}' /home/203bdata/mimic-iii/ADMISSIONS.csv | sort | uniq
 ```
- and change the column number `N`.
+and change the column number `N`.
  
 Thus for column 10 `INSURANCE` the possible values are:
 
@@ -93,17 +93,19 @@ After running this code:
 ```{bash, eval=FALSE}
 for character in "Elizabeth" "Jane" "Lydia" "Darcy"
   do
+    printf "%-10s" $character 
     grep -oE $character pride_and_prejudice.txt | wc -l
   done
 ```
 
 We obtain:
 
-```
-"Elizabeth" - 634
-"Jane" - 294
-"Lydia" - 170
-"Darcy" - 417
+```{bash echo=FALSE}
+for character in "Elizabeth" "Jane" "Lydia" "Darcy"
+  do
+    printf "%-10s" $character 
+    grep -oE $character pride_and_prejudice.txt | wc -l
+  done
 ```
 Thus Elizabeth was the most mentioned.
 

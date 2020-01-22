@@ -1,5 +1,5 @@
 ---
-title: "BIOSTAT 203B HW1"
+title: "BIOSTAT 203B HW1 Solutions"
 author: "George Dewey UID: 704528320"
 output:
   html_document: default
@@ -67,6 +67,210 @@ which returns:
 Display the first few lines of ADMISSIONS.csv with: `head /home/203bdata/mimic-iii/ADMISSIONS.csv`
 
 From `awk 'END { print NR }' /home/203bdata/mimic-iii/ADMISSIONS.csv`, there are **58977** lines in ADMISSIONS.csv.
+
+The number of unique patients in the dataset can be given by `awk '{print $2}' /home/203bdata/mimic-iii/ADMISSIONS.csv | sort | uniq | wc -l`. There are **58768** unique patients.
+
+To obtain the possible values for each category, we can use `awk -F ',' '{if (NR!=1) {print $10}}' /home/203bdata/mimic-iii/ADMISSIONS.csv | sort | uniq` and change the column number. Thus for column 10 `INSURANCE` the possible values are:
+
+```
+"Government"
+"Medicaid"
+"Medicare"
+"Private"
+"Self Pay"
+```
+
+For column 11 `LANGUAGE`:
+
+```
+"ALBA"
+"AMER"
+"*AMH"
+"*ARA"
+"ARAB"
+"*ARM"
+"* BE"
+"*BEN"
+"BENG"
+"*BOS"
+"*BUL"
+"*BUR"
+"CAMB"
+"*CAN"
+"CANT"
+"CAPE"
+"*CDI"
+"*CHI"
+"*CRE"
+"*DEA"
+"*DUT"
+"ENGL"
+"ETHI"
+"*FAR"
+"*FIL"
+"FREN"
+"* FU"
+"*FUL"
+"GERM"
+"GREE"
+"*GUJ"
+"HAIT"
+"HIND"
+"*HUN"
+"*IBO"
+"ITAL"
+"JAPA"
+"*KHM"
+"KORE"
+"LAOT"
+"*LEB"
+"*LIT"
+"*MAN"
+"MAND"
+"*MOR"
+"*NEP"
+"*PER"
+"PERS"
+"*PHI"
+"POLI"
+"PORT"
+"PTUN"
+"*PUN"
+"*ROM"
+"*RUS"
+"RUSS"
+"SERB"
+"**SH"
+"SOMA"
+"*SPA"
+"SPAN"
+"** T"
+"TAGA"
+"*TAM"
+"*TEL"
+"THAI"
+"**TO"
+"*TOI"
+"*TOY"
+"TURK"
+"*URD"
+"URDU"
+"VIET"
+"*YID"
+"*YOR"
+```
+
+For column 12 `RELIGION`:
+
+```
+"7TH DAY ADVENTIST"
+"BAPTIST"
+"BUDDHIST"
+"CATHOLIC"
+"CHRISTIAN SCIENTIST"
+"EPISCOPALIAN"
+"GREEK ORTHODOX"
+"HEBREW"
+"HINDU"
+"JEHOVAH'S WITNESS"
+"JEWISH"
+"LUTHERAN"
+"METHODIST"
+"MUSLIM"
+"NOT SPECIFIED"
+"OTHER"
+"PROTESTANT QUAKER"
+"ROMANIAN EAST. ORTH"
+"UNITARIAN-UNIVERSALIST"
+"UNOBTAINABLE"
+```
+
+For column 13 `MARITAL_STATUS`:
+
+```
+"DIVORCED"
+"LIFE PARTNER"
+"MARRIED"
+"SEPARATED"
+"SINGLE"
+"UNKNOWN (DEFAULT)"
+"WIDOWED"
+```
+
+And for column 14 `ETHNICITY`:
+
+```
+"AMERICAN INDIAN/ALASKA NATIVE"
+"AMERICAN INDIAN/ALASKA NATIVE FEDERALLY RECOGNIZED TRIBE"
+"ASIAN"
+"ASIAN - ASIAN INDIAN"
+"ASIAN - CAMBODIAN"
+"ASIAN - CHINESE"
+"ASIAN - FILIPINO"
+"ASIAN - JAPANESE"
+"ASIAN - KOREAN"
+"ASIAN - OTHER"
+"ASIAN - THAI"
+"ASIAN - VIETNAMESE"
+"BLACK/AFRICAN"
+"BLACK/AFRICAN AMERICAN"
+"BLACK/CAPE VERDEAN"
+"BLACK/HAITIAN"
+"CARIBBEAN ISLAND"
+"HISPANIC/LATINO - CENTRAL AMERICAN (OTHER)"
+"HISPANIC/LATINO - COLOMBIAN"
+"HISPANIC/LATINO - CUBAN"
+"HISPANIC/LATINO - DOMINICAN"
+"HISPANIC/LATINO - GUATEMALAN"
+"HISPANIC/LATINO - HONDURAN"
+"HISPANIC/LATINO - MEXICAN"
+"HISPANIC/LATINO - PUERTO RICAN"
+"HISPANIC/LATINO - SALVADORAN"
+"HISPANIC OR LATINO"
+"MIDDLE EASTERN"
+"MULTI RACE ETHNICITY"
+"NATIVE HAWAIIAN OR OTHER PACIFIC ISLANDER"
+"OTHER"
+"PATIENT DECLINED TO ANSWER"
+"PORTUGUESE"
+"SOUTH AMERICAN"
+"UNABLE TO OBTAIN"
+"UNKNOWN/NOT SPECIFIED"
+"WHITE"
+"WHITE - BRAZILIAN"
+"WHITE - EASTERN EUROPEAN"
+"WHITE - OTHER EUROPEAN"
+"WHITE - RUSSIAN"
+```
+
+### Question 3.1
+
+After running this code:
+
+```
+for character in "Elizabeth" "Jane" "Lydia" "Darcy"
+  do
+    grep -oE $character pride_and_prejudice.txt | wc -l
+  done
+```
+
+We obtain:
+
+```
+"Elizabeth" - 634
+"Jane" - 294
+"Lydia" - 170
+"Darcy" - 417
+```
+Thus Elizabeth was the most mentioned.
+
+### Question 3.2
+
+The command `echo 'hello, world' > test1.txt` overwrites anything in the file `test1.txt` with the text "hello, world".  The other command `echo 'hello, world' >> test2.txt` appends the text "hello, world" to the file `test2.txt`.
+
+
+
+
 
 
 

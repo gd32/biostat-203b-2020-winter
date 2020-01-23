@@ -47,5 +47,6 @@ for (r in 1:rep){
   msePrimeAvg = msePrimeAvg + estMeanPrimes(x)^2
 }
 
-print(mseSampAvg/rep)
 print(msePrimeAvg/rep)
+print(mseSampAvg/rep)
+

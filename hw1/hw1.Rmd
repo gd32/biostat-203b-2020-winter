@@ -1,0 +1,294 @@
+---
+title: "BIOSTAT 203B HW1 Solutions"
+author: 
+- "George Dewey" 
+- "UID: 704528320"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Question 2.1
+
+```{r pressure, echo=FALSE, out.width = '75%'}
+knitr::include_graphics('citi_cert.jpg')
+```
+
+### Question 2.3
+
+The provided bash code provides the direct file path of the files located in the `/home/203bdata/mimic-iii/` directory.
+
+```{bash}
+for datafile in /home/203bdata/mimic-iii/*.csv
+  do
+    ls $datafile
+  done
+```
+
+The number of lines in each csv file can can be generated with the following:
+
+```{bash}
+for datafile in /home/203bdata/mimic-iii/*.csv
+  do
+    awk 'END { print NR }' $datafile
+  done
+```
+
+### Question 2.4
+
+Display the first 10 lines of ADMISSIONS.csv with: 
+
+```{bash}
+head /home/203bdata/mimic-iii/ADMISSIONS.csv
+```
+
+From :
+```{bash}
+awk 'END { print NR }' /home/203bdata/mimic-iii/ADMISSIONS.csv
+```
+There are **58977** lines in ADMISSIONS.csv.
+
+The number of unique patients in the dataset can be given by:
+```{bash}
+awk -F ',' '{print $2}' /home/203bdata/mimic-iii/ADMISSIONS.csv | uniq | wc -l
+```
+
+There are **46521** unique patients.
+
+To obtain the possible values for each category, we can use 
+```{bash, eval=FALSE}
+awk -F ',' '{if (NR!=1) {print $N}}' /home/203bdata/mimic-iii/ADMISSIONS.csv | sort | uniq
+```
+and change the column number `N`.
+ 
+Thus for column 10 `INSURANCE` the possible values are:
+
+```{bash}
+awk -F ',' '{if (NR!=1) {print $10}}' /home/203bdata/mimic-iii/ADMISSIONS.csv | sort | uniq
+```
+
+For column 11 `LANGUAGE`:
+```{bash}
+awk -F ',' '{if (NR!=1) {print $11}}' /home/203bdata/mimic-iii/ADMISSIONS.csv | sort | uniq
+```
+
+For column 12 `RELIGION`:
+
+```{bash}
+awk -F ',' '{if (NR!=1) {print $12}}' /home/203bdata/mimic-iii/ADMISSIONS.csv | sort | uniq
+```
+
+For column 13 `MARITAL_STATUS`:
+
+```{bash}
+awk -F ',' '{if (NR!=1) {print $13}}' /home/203bdata/mimic-iii/ADMISSIONS.csv | sort | uniq
+```
+
+And for column 14 `ETHNICITY`:
+
+```{bash}
+awk -F ',' '{if (NR!=1) {print $14}}' /home/203bdata/mimic-iii/ADMISSIONS.csv | sort | uniq
+```
+
+---
+
+### Question 3.1
+
+After running this code:
+
+```{bash, eval=FALSE}
+for character in "Elizabeth" "Jane" "Lydia" "Darcy"
+  do
+    printf "%-10s" $character 
+    grep -oE $character pride_and_prejudice | wc -l
+  done
+```
+
+We obtain:
+
+```{bash echo=FALSE}
+for character in "Elizabeth" "Jane" "Lydia" "Darcy"
+  do
+    printf "%-10s" $character 
+    grep -oE $character pride_and_prejudice | wc -l
+  done
+```
+Thus Elizabeth was the most mentioned.
+
+### Question 3.2
+
+The command `echo 'hello, world' > test1.txt` overwrites anything in the file `test1.txt` with the text "hello, world".  The other command `echo 'hello, world' >> test2.txt` appends the text "hello, world" to the file `test2.txt`.
+
+### Question 3.3
+
+The output returns the `$2-$3` lines of file `$1`.
+The fields `$1`, `$2`, and `$3` serve as placeholders for the arguments the user must input to run the script.
+The numeric arguments indicate the input positions for each argument (i.e. $1 is the first input, $2 is the second, etc.)
+
+In this case, the output for `./middle.sh pride_and_prejudice.txt 20 5` was lines 15-20 of the text:
+
+```
+
+Author: Jane Austen
+
+Editor: R. W. (Robert William) Chapman
+
+
+```
+
+The purpose of the first line of the script is to tell the operating system what shell to run the script in (in this case the `sh` shell).
+
+---
+
+### Question 4.1
+
+Below is the updated runSim script:
+
+```{r, eval=FALSE}
+## parsing command arguments
+for (arg in commandArgs(TRUE)) {
+  eval(parse(text=arg))
+}
+
+## set the random seed
+set.seed(seed)
+
+## initialize MSE
+mseSampAvg = 0
+msePrimeAvg = 0
+
+for (r in 1:rep){
+  ## parse distribution information
+  if (dist == "gaussian"){
+  ## simulate data
+    x = rnorm(n)
+  }
+  else if (dist == "t1"){
+    x = rt(n, df=1)
+  }
+  else if (dist == "t5"){
+    x = rt(n, df=5)
+  }
+  else {
+    # print error message if wrong distribution entered
+    stop("Wrong distribution specified. Try 'gaussian', 't1', or 't5'")
+  }
+  mseSampAvg = mseSampAvg + mean(x)^2
+  msePrimeAvg = msePrimeAvg + estMeanPrimes(x)^2
+}
+
+## check if a given integer is prime
+isPrime = function(n) {
+  if (n <= 3) {
+    return (TRUE)
+  }
+  if (any((n %% 2:floor(sqrt(n))) == 0)) {
+    return (FALSE)
+  }
+  return (TRUE)
+}
+
+## estimate mean only using observation with prime indices
+estMeanPrimes = function (x) {
+  n = length(x)
+  ind = sapply(1:n, isPrime)
+  return (mean(x[ind]))
+}
+
+# print estimators
+print(msePrimeAvg/rep)
+print(mseSampAvg/rep)
+```
+
+### Question 4.2
+
+Below is the updated autoSim script:
+
+```{r, eval=FALSE}
+## parse command arguments
+for (arg in commandArgs(TRUE)) {
+  eval(parse(text=arg))
+}
+
+## initialize parameters for simulation
+nVals = seq(100, 500, by=100)
+distTypes = c("gaussian", "t1", "t5")
+
+## loop through each combination of distribution/sample size
+for (dist in distTypes){
+  for (n in nVals) {
+    # create system call argument
+    arg = paste("n=", n, 
+                " dist=", shQuote(shQuote(dist)), 
+                " seed=", seed, 
+                " rep=", rep, sep="")
+    # create output filenames
+    oFile = paste("n", n, "_dist_", dist, ".txt", sep="")
+    # call system to run runSim script to generate simulated estimates
+    sysCall = paste("nohup Rscript runSim_4.1.R ", arg, " > ", oFile, sep="")
+    system(sysCall, wait=F)
+    print(paste("sysCall=", sysCall, sep=""))
+  }
+}
+```
+
+### Question 4.3
+
+```{r}
+## Grab a vector of filenames with the appropriate extension and name
+gaussian_files = list.files(path = ".", 
+                            pattern = "*_gaussian.txt", 
+                            full.names=T, 
+                            recursive=F)
+simValsGaussian = lapply(gaussian_files, read.table, header=F)
+inter1 = as.data.frame(simValsGaussian)
+
+## These are the columns from read.table that we want to keep
+keep = c("V2", "V2.1", "V2.2", "V2.3", "V2.4")
+inter1 = inter1[,keep]
+
+## Stack columns into a single column
+first_col = stack(inter1)
+first_col = as.data.frame(first_col[,1])
+
+## Repeat for T5 and T1 output files
+t5_files = list.files(path = ".", 
+                      pattern = "*_t5.txt", 
+                      full.names=T, 
+                      recursive=F)
+simValsT5 = lapply(t5_files, read.table, header=F)
+inter2 = as.data.frame(simValsT5)
+inter2 = inter2[,keep]
+
+second_col = stack(inter2)
+second_col = as.data.frame(second_col[,1])
+
+t1_files = list.files(path = ".", 
+                      pattern = "*_t1.txt", 
+                      full.names=T, 
+                      recursive=F)
+simValsT1 = lapply(t1_files, read.table, header=F)
+inter3 = as.data.frame(simValsT1)
+
+inter3 = inter3[,keep]
+third_col = stack(inter3)
+third_col = as.data.frame(third_col[,1])
+
+## Create other table columns
+n_col = c(100, 100, 200, 200, 300, 300, 400, 400, 500, 500)
+method_col = rep(c("PrimeAvg", "SampleAvg"), 5)
+
+## Merge columns and rename
+final_table = data.frame(n_col, method_col, first_col, second_col, third_col)
+colnames(final_table) = c("N", "Method", "Gaussian", "T5", "T1")
+
+## Display final table
+final_table
+```
+
+
+

@@ -46,10 +46,10 @@ There are **58977** lines in ADMISSIONS.csv.
 
 The number of unique patients in the dataset can be given by:
 ```{bash}
-awk '{print $2}' /home/203bdata/mimic-iii/ADMISSIONS.csv | sort | uniq | wc -l
+awk -F ',' '{print $2}' /home/203bdata/mimic-iii/ADMISSIONS.csv | uniq | wc -l
 ```
 
-There are **58768** unique patients.
+There are **46521** unique patients.
 
 To obtain the possible values for each category, we can use 
 ```{bash, eval=FALSE}
@@ -85,6 +85,8 @@ And for column 14 `ETHNICITY`:
 ```{bash}
 awk -F ',' '{if (NR!=1) {print $14}}' /home/203bdata/mimic-iii/ADMISSIONS.csv | sort | uniq
 ```
+
+---
 
 ### Question 3.1
 
@@ -132,7 +134,11 @@ Editor: R. W. (Robert William) Chapman
 
 The purpose of the first line of the script is to tell the operating system what shell to run the script in (in this case the `sh` shell).
 
+---
+
 ### Question 4.1
+
+Below is the updated runSim script:
 
 ```{r, eval=FALSE}
 ## parsing command arguments
@@ -151,7 +157,7 @@ for (r in 1:rep){
   ## parse distribution information
   if (dist == "gaussian"){
   ## simulate data
-    x=rnorm(n)
+    x = rnorm(n)
   }
   else if (dist == "t1"){
     x = rt(n, df=1)
@@ -186,13 +192,13 @@ estMeanPrimes = function (x) {
 }
 
 # print estimators
-print(mseSampAvg/rep)
 print(msePrimeAvg/rep)
+print(mseSampAvg/rep)
 ```
 
-###Question 4.2
+### Question 4.2
 
-Below is the updated autoSim code:
+Below is the updated autoSim script:
 
 ```{r, eval=FALSE}
 ## parse command arguments
@@ -200,7 +206,7 @@ for (arg in commandArgs(TRUE)) {
   eval(parse(text=arg))
 }
 
-## initialize values for simulation
+## initialize parameters for simulation
 nVals = seq(100, 500, by=100)
 distTypes = c("gaussian", "t1", "t5")
 
@@ -218,5 +224,52 @@ for (dist in distTypes){
   }
 }
 ```
+
+### Question 4.3
+
+```{r}
+gaussian_files = list.files(path = ".", pattern = "*_gaussian.txt", full.names=T, recursive=F)
+gaussian_files
+
+simValsGaussian = lapply(gaussian_files, read.table, header=F)
+inter1 = as.data.frame(simValsGaussian)
+
+keep = c("V2", "V2.1", "V2.2", "V2.3", "V2.4")
+inter1 = inter1[,keep]
+
+first_col = stack(inter1)
+first_col = as.data.frame(first_col[,1])
+
+# ---
+
+t5_files = list.files(path = ".", pattern = "*_t5.txt", full.names=T, recursive=F)
+simValsT5 = lapply(t5_files, read.table, header=F)
+inter2 = as.data.frame(simValsT5)
+
+second_col = stack(inter2)
+second_col = as.data.frame(second_col[,1])
+
+# ---
+
+t1_files = list.files(path = ".", pattern = "*_t1.txt", full.names=T, recursive=F)
+t1_files
+
+simValsT1 = lapply(t1_files, read.table, header=F)
+inter3 = as.data.frame(simValsT1)
+
+inter3 = inter3[,keep]
+third_col = stack(inter3)
+third_col = as.data.frame(third_col[,1])
+
+n_col = c(100, 100, 200, 200, 300, 300, 400, 400, 500, 500)
+method_col = rep(c("PrimeAvg", "SampleAvg"), 5)
+
+# ---
+
+final_table = data.frame(n_col, method_col, first_col, second_col, third_col)
+colnames(final_table) = c("N", "Method", "Gaussian", "T5", "T1")
+final_table
+```
+
 
 

@@ -222,7 +222,10 @@ distTypes = c("gaussian", "t1", "t5")
 for (dist in distTypes){
   for (n in nVals) {
     # create system call argument
-    arg = paste("n=", n, " dist=", shQuote(shQuote(dist)), " seed=", seed, " rep=", rep, sep="")
+    arg = paste("n=", n, 
+                " dist=", shQuote(shQuote(dist)), 
+                " seed=", seed, 
+                " rep=", rep, sep="")
     # create output filenames
     oFile = paste("n", n, "_dist_", dist, ".txt", sep="")
     # call system to run runSim script to generate simulated estimates
@@ -237,7 +240,10 @@ for (dist in distTypes){
 
 ```{r}
 ## Grab a vector of filenames with the appropriate extension and name
-gaussian_files = list.files(path = ".", pattern = "*_gaussian.txt", full.names=T, recursive=F)
+gaussian_files = list.files(path = ".", 
+                            pattern = "*_gaussian.txt", 
+                            full.names=T, 
+                            recursive=F)
 simValsGaussian = lapply(gaussian_files, read.table, header=F)
 inter1 = as.data.frame(simValsGaussian)
 
@@ -250,7 +256,10 @@ first_col = stack(inter1)
 first_col = as.data.frame(first_col[,1])
 
 ## Repeat for T5 and T1 output files
-t5_files = list.files(path = ".", pattern = "*_t5.txt", full.names=T, recursive=F)
+t5_files = list.files(path = ".", 
+                      pattern = "*_t5.txt", 
+                      full.names=T, 
+                      recursive=F)
 simValsT5 = lapply(t5_files, read.table, header=F)
 inter2 = as.data.frame(simValsT5)
 inter2 = inter2[,keep]
@@ -258,7 +267,10 @@ inter2 = inter2[,keep]
 second_col = stack(inter2)
 second_col = as.data.frame(second_col[,1])
 
-t1_files = list.files(path = ".", pattern = "*_t1.txt", full.names=T, recursive=F)
+t1_files = list.files(path = ".", 
+                      pattern = "*_t1.txt", 
+                      full.names=T, 
+                      recursive=F)
 simValsT1 = lapply(t1_files, read.table, header=F)
 inter3 = as.data.frame(simValsT1)
 

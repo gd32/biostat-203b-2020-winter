@@ -1,1 +1,2 @@
-This is a repository for UCLA BIOSTAT 203B - Winter 2020. It includes solutions to homework assignments and project code.
+This is a repository for UCLA BIOSTAT 203B - Introduction to Data Science. It contains homework solutions and project code.
+

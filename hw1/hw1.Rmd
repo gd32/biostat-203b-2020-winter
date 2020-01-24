@@ -1,6 +1,8 @@
 ---
 title: "BIOSTAT 203B HW1 Solutions"
-author: "George Dewey UID: 704528320"
+author: 
+- "George Dewey" 
+- "UID: 704528320"
 output:
   html_document: default
   pdf_document: default
@@ -8,6 +10,12 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Question 2.1
+
+```{r pressure, echo=FALSE, out.width = '75%'}
+knitr::include_graphics('citi_cert.jpg')
 ```
 
 ### Question 2.3
@@ -21,9 +29,9 @@ for datafile in /home/203bdata/mimic-iii/*.csv
   done
 ```
 
-The number of lines in each csv file can can be generated with the following code:
+The number of lines in each csv file can can be generated with the following:
 
-```{bash, eval=F}
+```{bash}
 for datafile in /home/203bdata/mimic-iii/*.csv
   do
     awk 'END { print NR }' $datafile
@@ -96,7 +104,7 @@ After running this code:
 for character in "Elizabeth" "Jane" "Lydia" "Darcy"
   do
     printf "%-10s" $character 
-    grep -oE $character pride_and_prejudice.txt | wc -l
+    grep -oE $character pride_and_prejudice | wc -l
   done
 ```
 
@@ -106,7 +114,7 @@ We obtain:
 for character in "Elizabeth" "Jane" "Lydia" "Darcy"
   do
     printf "%-10s" $character 
-    grep -oE $character pride_and_prejudice.txt | wc -l
+    grep -oE $character pride_and_prejudice | wc -l
   done
 ```
 Thus Elizabeth was the most mentioned.
@@ -228,18 +236,20 @@ for (dist in distTypes){
 ### Question 4.3
 
 ```{r}
+## Grab a vector of filenames with the appropriate extension and name
 gaussian_files = list.files(path = ".", pattern = "*_gaussian.txt", full.names=T, recursive=F)
 simValsGaussian = lapply(gaussian_files, read.table, header=F)
 inter1 = as.data.frame(simValsGaussian)
 
+## These are the columns from read.table that we want to keep
 keep = c("V2", "V2.1", "V2.2", "V2.3", "V2.4")
 inter1 = inter1[,keep]
 
+## Stack columns into a single column
 first_col = stack(inter1)
 first_col = as.data.frame(first_col[,1])
 
-# ---
-
+## Repeat for T5 and T1 output files
 t5_files = list.files(path = ".", pattern = "*_t5.txt", full.names=T, recursive=F)
 simValsT5 = lapply(t5_files, read.table, header=F)
 inter2 = as.data.frame(simValsT5)
@@ -247,8 +257,6 @@ inter2 = inter2[,keep]
 
 second_col = stack(inter2)
 second_col = as.data.frame(second_col[,1])
-
-# ---
 
 t1_files = list.files(path = ".", pattern = "*_t1.txt", full.names=T, recursive=F)
 simValsT1 = lapply(t1_files, read.table, header=F)
@@ -258,13 +266,15 @@ inter3 = inter3[,keep]
 third_col = stack(inter3)
 third_col = as.data.frame(third_col[,1])
 
-# ---
-
+## Create other table columns
 n_col = c(100, 100, 200, 200, 300, 300, 400, 400, 500, 500)
 method_col = rep(c("PrimeAvg", "SampleAvg"), 5)
 
+## Merge columns and rename
 final_table = data.frame(n_col, method_col, first_col, second_col, third_col)
 colnames(final_table) = c("N", "Method", "Gaussian", "T5", "T1")
+
+## Display final table
 final_table
 ```
 

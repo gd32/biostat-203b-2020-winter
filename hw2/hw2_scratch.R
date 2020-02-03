@@ -69,10 +69,36 @@ ggplot(df) +
 
 ## Duration of stay
 
-df = df %>% mutate(days_of_stay = as.duration((disch_time - admit_time)))
-
-select(df, days_of_stay)
+df = df %>% mutate(days_of_stay = as.numeric((disch_time - admit_time), "days"))
 
 ggplot(df) + 
-  geom_bar(aes(x = as.duration(days_of_stay), fill = "navy"))
+  geom_histogram(aes(days_of_stay), fill = "navy", binwidth = 5) +
+  xlab("Length of Stay (Days)") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Length of Stay")
            
+## Admission type
+
+ggplot(df) +
+  geom_bar(aes(admit_type), fill = "navy") +
+  xlab("Admit Type") +
+  ylab("Count") +
+  ggtitle("Frequency of Admissions by Admit Type")
+
+## Number of admissions per patient
+
+ggplot() +
+  geom_bar(aes(table(df$sub_id)), fill = "navy") +
+  xlab("Number of admissions per patient") + 
+  ylab("Count") + 
+  ggtitle("Number of Admissions per Patient")
+
+## Admissions location
+
+ggplot(df) + 
+  geom_bar(aes(admit_location), fill = "navy") +
+  xlab("Admission Location") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Location") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  

@@ -20,14 +20,8 @@ names(df) = col_names
 # Parse out year/month/day from datetime columns
 
 df = df %>% mutate(admit_year = year(admit_time), 
-                   admit_month = month(admit_time),
-                   admit_day = day(admit_time),
-                   disch_year = year(disch_time),
-                   disch_month = month(disch_time),
-                   disch_day = day(disch_time),
-                   death_year = year(death_time),
-                   death_month = month(death_time),
-                   death_day = day(death_time))
+                   admit_month = month(admit_time, label=T),
+                   admit_day = day(admit_time))
 
 select(df, starts_with("admit"))
 select(df, starts_with("disch")) 
@@ -45,13 +39,35 @@ ggplot(df) +
 
 ## Admission month
 
-months = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", 
-           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-
 ggplot(df) +
   geom_bar(aes(x = admit_month), fill = "navy") +
   xlab("Admission Month") +
-  scale_x_discrete(limits = months) +
   ylab("Count") +
   ggtitle("Frequency of Admissions by Month")
 
+## Admission day
+
+df = df %>% mutate(admit_wday = wday(admit_time, label = T))
+
+ggplot(df) +
+  geom_bar(aes(x = admit_wday), fill = "navy") +
+  xlab("Admission Day") +
+  ylab("Count") +
+  ggtitle("Frequency of Admissions by Day of Week")
+
+## Admission hour
+
+head(df)
+
+df = df %>% mutate(admit_hour = hour(admit_time))
+
+ggplot(df) + 
+  geom_bar(aes(x = admit_hour), fill = "navy") +
+  xlab("Admission Hour") +
+  ylab("Count") +
+  ggtitle("Frequency of Admissions by Hour")
+
+df = df %>% mutate(days_of_stay = (disch_time - admit_time)/24)
+
+ggplot(df) + 
+  geom_bar(aes(x = days_of_stay), fill = "navy")

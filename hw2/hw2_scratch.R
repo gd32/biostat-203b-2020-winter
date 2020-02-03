@@ -79,7 +79,7 @@ ggplot(df) +
            
 ## Admission type
 
-ggplot(df) +
+ggplot(distinct(df)) +
   geom_bar(aes(admit_type), fill = "navy") +
   xlab("Admit Type") +
   ylab("Count") +
@@ -95,10 +95,57 @@ ggplot() +
 
 ## Admissions location
 
-ggplot(df) + 
+df %>% group_by(sub_id) %>% 
+ggplot() + 
   geom_bar(aes(admit_location), fill = "navy") +
   xlab("Admission Location") +
   ylab("Count") +
   ggtitle("Frequency of Admission by Location") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-  
+
+## Insurance
+
+df %>% group_by(sub_id) %>%
+  ggplot() + 
+  geom_bar(aes(insurance), fill = "navy") +
+  xlab("Insurance Type") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Insurance Type")   
+
+## Language
+
+# Maybe do only top appears, others have low freq
+
+df %>% group_by(sub_id) %>%
+ggplot() +
+  geom_bar(aes(language), fill = "navy") +
+  xlab("Language") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Language") +
+  theme(axis.text.x = element_text(size = 5, angle = 90, hjust = 1))
+
+## Religion
+
+df %>% group_by(sub_id) %>%
+ggplot() + 
+  geom_bar(aes(religion), fill = "navy") +
+  xlab("Religion") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Religion") +
+  theme(axis.text.x = element_text(size = 10, angle = 90, hjust = 1))
+
+## Marital Status
+
+df %>% group_by(sub_id) %>%
+ggplot() + 
+  geom_bar(aes(mar_stat), fill = "navy") +
+  xlab("Marital Status") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Marital Status") +
+  theme(axis.text.x = element_text(size = 10, angle = 90, hjust = 1))
+
+## Ethnicity
+
+
+
+## Death

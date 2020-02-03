@@ -67,7 +67,12 @@ ggplot(df) +
   ylab("Count") +
   ggtitle("Frequency of Admissions by Hour")
 
-df = df %>% mutate(days_of_stay = (disch_time - admit_time)/24)
+## Duration of stay
+
+df = df %>% mutate(days_of_stay = as.duration((disch_time - admit_time)))
+
+select(df, days_of_stay)
 
 ggplot(df) + 
-  geom_bar(aes(x = days_of_stay), fill = "navy")
+  geom_bar(aes(x = as.duration(days_of_stay), fill = "navy"))
+           

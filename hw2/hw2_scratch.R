@@ -105,7 +105,7 @@ ggplot() +
 
 ## Insurance
 
-df %>% group_by(sub_id) %>%
+df %>% group_by(sub_id) %>% 
   ggplot() + 
   geom_bar(aes(insurance), fill = "navy") +
   xlab("Insurance Type") +
@@ -116,7 +116,7 @@ df %>% group_by(sub_id) %>%
 
 # Maybe do only top appears, others have low freq
 
-df %>% group_by(sub_id) %>%
+df %>% group_by(sub_id) %>% filter(n() == 1) %>%
 ggplot() +
   geom_bar(aes(language), fill = "navy") +
   xlab("Language") +
@@ -126,7 +126,7 @@ ggplot() +
 
 ## Religion
 
-df %>% group_by(sub_id) %>%
+df %>% group_by(sub_id) %>% filter(n() == 1) %>%
 ggplot() + 
   geom_bar(aes(religion), fill = "navy") +
   xlab("Religion") +
@@ -136,7 +136,7 @@ ggplot() +
 
 ## Marital Status
 
-df %>% group_by(sub_id) %>%
+df %>% group_by(sub_id) %>% filter(n() == 1) %>%
 ggplot() + 
   geom_bar(aes(mar_stat), fill = "navy") +
   xlab("Marital Status") +
@@ -146,6 +146,20 @@ ggplot() +
 
 ## Ethnicity
 
-
+df %>% group_by(sub_id) %>% filter(n() == 1) %>%
+  ggplot() + 
+  geom_bar(aes(ethnicity), fill = "navy") +
+  xlab("Ethnicity") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Ethnicity") +
+  theme(axis.text.x = element_text(size = 10, angle = 90, hjust = 1))
 
 ## Death
+
+deaths = df %>% drop_na(death_time)
+
+ggplot(deaths) + 
+  geom_boxplot(aes("", death_time), fill = "navy") +
+  ylab("Time of Death") +
+  ggtitle("Frequency of Admission by Ethnicity") +
+  theme(axis.text.x = element_text(size = 10, angle = 90, hjust = 1))

@@ -158,6 +158,8 @@ df %>% group_by(sub_id) %>% filter(n() == 1) %>%
 
 deaths = df %>% drop_na(death_time)
 
+# What to do with this one
+
 ggplot(deaths) + 
   geom_boxplot(aes("", death_time), fill = "navy") +
   ylab("Time of Death") +

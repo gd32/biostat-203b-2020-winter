@@ -2,9 +2,11 @@ library(dplyr)
 library(ggplot2)
 library(lubridate)
 
+# Question 1
+
 # Load data
 
-df = read_csv("/home/203bdata/mimic-iii/ADMISSIONS.csv")
+admits = read_csv("/home/203bdata/mimic-iii/ADMISSIONS.csv")
 
 # Change column names
 
@@ -15,23 +17,23 @@ col_names = c('rowid', 'sub_id', 'hadm_id', 'admit_time',
               'ed_reg_time', 'ed_out_time', 'diagnosis',
               'hospital_exp_flag', 'has_chart_events')
 
-names(df) = col_names
+names(admits) = col_names
 
 # Parse out year/month/day from datetime columns
 
-df = df %>% mutate(admit_year = year(admit_time), 
+admits = admits %>% mutate(admit_year = year(admit_time), 
                    admit_month = month(admit_time, label=T),
                    admit_day = day(admit_time))
 
-select(df, starts_with("admit"))
-select(df, starts_with("disch")) 
-select(df, starts_with("death"))
+select(admits, starts_with("admit"))
+select(admits, starts_with("disch")) 
+select(admits, starts_with("death"))
 
 # Plotting
 
 ## Admission year
 
-ggplot(df) +
+ggplot(admits) +
   geom_bar(mapping = aes(x = admit_year), fill = "navy") + 
   xlab("Admission Year") +
   ylab("Count") +
@@ -39,7 +41,7 @@ ggplot(df) +
 
 ## Admission month
 
-ggplot(df) +
+ggplot(admits) +
   geom_bar(aes(x = admit_month), fill = "navy") +
   xlab("Admission Month") +
   ylab("Count") +
@@ -47,9 +49,9 @@ ggplot(df) +
 
 ## Admission day
 
-df = df %>% mutate(admit_wday = wday(admit_time, label = T))
+admits = admits %>% mutate(admit_wday = wday(admit_time, label = T))
 
-ggplot(df) +
+ggplot(admits) +
   geom_bar(aes(x = admit_wday), fill = "navy") +
   xlab("Admission Day") +
   ylab("Count") +
@@ -57,11 +59,11 @@ ggplot(df) +
 
 ## Admission hour
 
-head(df)
+head(admits)
 
-df = df %>% mutate(admit_hour = hour(admit_time))
+admits = admits %>% mutate(admit_hour = hour(admit_time))
 
-ggplot(df) + 
+ggplot(admits) + 
   geom_bar(aes(x = admit_hour), fill = "navy") +
   xlab("Admission Hour") +
   ylab("Count") +
@@ -69,9 +71,9 @@ ggplot(df) +
 
 ## Duration of stay
 
-df = df %>% mutate(days_of_stay = as.numeric((disch_time - admit_time), "days"))
+admits = admits %>% mutate(days_of_stay = as.numeric((disch_time - admit_time), "days"))
 
-ggplot(df) + 
+ggplot(admits) + 
   geom_histogram(aes(days_of_stay), fill = "navy", binwidth = 5) +
   xlab("Length of Stay (Days)") +
   ylab("Count") +
@@ -79,7 +81,7 @@ ggplot(df) +
            
 ## Admission type
 
-ggplot(distinct(df)) +
+ggplot(distinct(admits)) +
   geom_bar(aes(admit_type), fill = "navy") +
   xlab("Admit Type") +
   ylab("Count") +
@@ -88,14 +90,14 @@ ggplot(distinct(df)) +
 ## Number of admissions per patient
 
 ggplot() +
-  geom_bar(aes(table(df$sub_id)), fill = "navy") +
+  geom_bar(aes(table(admits$sub_id)), fill = "navy") +
   xlab("Number of admissions per patient") + 
   ylab("Count") + 
   ggtitle("Number of Admissions per Patient")
 
 ## Admissions location
 
-df %>% group_by(sub_id) %>% 
+admits %>% group_by(sub_id) %>% 
 ggplot() + 
   geom_bar(aes(admit_location), fill = "navy") +
   xlab("Admission Location") +
@@ -105,7 +107,7 @@ ggplot() +
 
 ## Insurance
 
-df %>% group_by(sub_id) %>% 
+admits %>% group_by(sub_id) %>% 
   ggplot() + 
   geom_bar(aes(insurance), fill = "navy") +
   xlab("Insurance Type") +
@@ -116,7 +118,7 @@ df %>% group_by(sub_id) %>%
 
 # Maybe do only top appears, others have low freq
 
-df %>% group_by(sub_id) %>% filter(n() == 1) %>%
+admits %>% group_by(sub_id) %>% filter(n() == 1) %>%
 ggplot() +
   geom_bar(aes(language), fill = "navy") +
   xlab("Language") +
@@ -126,7 +128,7 @@ ggplot() +
 
 ## Religion
 
-df %>% group_by(sub_id) %>% filter(n() == 1) %>%
+admits %>% group_by(sub_id) %>% filter(n() == 1) %>%
 ggplot() + 
   geom_bar(aes(religion), fill = "navy") +
   xlab("Religion") +
@@ -136,7 +138,7 @@ ggplot() +
 
 ## Marital Status
 
-df %>% group_by(sub_id) %>% filter(n() == 1) %>%
+admits %>% group_by(sub_id) %>% filter(n() == 1) %>%
 ggplot() + 
   geom_bar(aes(mar_stat), fill = "navy") +
   xlab("Marital Status") +
@@ -146,7 +148,7 @@ ggplot() +
 
 ## Ethnicity
 
-df %>% group_by(sub_id) %>% filter(n() == 1) %>%
+admits %>% group_by(sub_id) %>% filter(n() == 1) %>%
   ggplot() + 
   geom_bar(aes(ethnicity), fill = "navy") +
   xlab("Ethnicity") +
@@ -156,12 +158,62 @@ df %>% group_by(sub_id) %>% filter(n() == 1) %>%
 
 ## Death
 
-deaths = df %>% drop_na(death_time)
+admits = admits %>% mutate(survived = is.na(death_time))
 
-# What to do with this one
+ggplot(admits) + 
+  geom_bar(aes(survived), fill = "navy") +
+  xlab("Survival Status") +
+  ylab("Count") +
+  ggtitle("Admissions by Survival Status") +
+  scale_x_discrete(labels = c("Died", "Survived")) +
+  theme(axis.text.x = element_text(size = 10, angle = 45, hjust = 1))
 
-ggplot(deaths) + 
-  geom_boxplot(aes("", death_time), fill = "navy") +
-  ylab("Time of Death") +
-  ggtitle("Frequency of Admission by Ethnicity") +
-  theme(axis.text.x = element_text(size = 10, angle = 90, hjust = 1))
+# Can do something else?
+
+# Question 2
+
+patients = read_csv("/home/203bdata/mimic-iii/PATIENTS.csv")
+
+pt_colnames = c("row_id", "sub_id", "gender", "dob", "dod", "dod_hosp",
+                "dod_ssn", "exp_flag")
+
+names(patients) = pt_colnames
+
+admit_pts = left_join(admits, patients, by = "sub_id")
+
+# inner_admit_pts = inner_join(admits, patients, by = "sub_id")
+
+# gender
+
+ggplot(admit_pts) +
+  geom_bar(aes(gender), fill = "navy") +
+  xlab("Gender") +
+  ylab("Count") +
+  scale_x_discrete(labels = c("Female", "Male")) +
+  ggtitle("Distribution of Gender in Admitted Patients") +
+  theme(axis.text.x = element_text(size = 10, angle = 45, hjust = 1))
+
+# age at admission
+
+names(admit_pts)
+
+# create admit age in years
+admit_pts = admit_pts %>% 
+  mutate(admit_age = as.numeric(admit_time - dob, "weeks")/52.25) 
+
+select(admit_pts, dob)
+
+range(admit_pts$dob)
+
+range(admit_pts$admit_age)
+
+ggplot(admit_pts) + 
+  geom_histogram(aes(admit_age), fill = "navy", binwidth = 10) +
+  xlab("Age at Admission") +
+  ylab("Count") + 
+  ggtitle("Distribution of Admission Age")
+  
+# Question 3
+
+
+

@@ -211,9 +211,33 @@ ggplot(admit_pts) +
   geom_histogram(aes(admit_age), fill = "navy", binwidth = 10) +
   xlab("Age at Admission") +
   ylab("Count") + 
-  ggtitle("Distribution of Admission Age")
+  ggtitle("Distribution of Age at Admission")
+
+dim(admit_pts)
   
 # Question 3
 
+icu = read_csv("/home/203bdata/mimic-iii/ICUSTAYS.csv")
 
+names(icu) = tolower(names(icu))
 
+names(icu)
+
+# Length of ICU Stay
+
+ggplot(icu) +
+  geom_histogram(aes(los), fill = "navy", binwidth = 5) +
+  xlab("Length of ICU Stay") +
+  ylab("Count") +
+  ggtitle("Distribution of Length of ICU Stay")
+
+# first ICU unit
+
+ggplot(icu) +
+  geom_bar(aes(first_careunit), fill = "navy") +
+  xlab("First ICU Unit") +
+  ylab("Count") +
+  ggtitle("Frequency of First ICU Unit")
+
+#gender
+#age

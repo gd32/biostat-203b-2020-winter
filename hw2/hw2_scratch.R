@@ -351,7 +351,6 @@ ggplot(icu_pts) +
   geom_bar(aes(gender), fill = "navy") +
   xlab("Gender") +
   ylab("Count") +
-  scale_x_discrete()
 ggtitle("Gender among Patients with ICU Stay")
 
 # Same pattern as in admitted patients
@@ -401,6 +400,10 @@ p5 = icu_admit_pts %>% filter(first_careunit == "TSICU") %>%
   ggtitle("TSICU") +
   scale_x_continuous(breaks = seq(0, 90, 10))
 
+library(magrittr)
+
+icu_admit_pts %>% filter(admit_age > 89) %$% summary(admit_age)
+
 p6 = icu_admit_pts %>% filter(admit_age > 89) %>%
   ggplot() +
   geom_histogram(aes(admit_age - 210), fill = "navy", binwidth = 2) +
@@ -429,9 +432,10 @@ chart_events
 
 names(chart_events) = tolower(names(chart_events))
 
-names(chart_events)
+names(chart_events) 
 
 d_items = read_csv("/home/203bdata/mimic-iii/D_ITEMS.csv", col_types = "ddcccccccc")
+
 
 names(d_items) = tolower(names(d_items))
 
@@ -439,6 +443,12 @@ names(d_items)
 
 chart_labeled = left_join(chart_events, d_items, by = "itemid")
 
+#CO2 %>% filter(str_detect(Treatment, "non"))
 
+chart_labeled
+
+chart_labeled %>% filter(str_detect(label, 'systolic')) %>% select(itemid, label) %$% table(itemid, label)
+
+# use itemids 220050, 220059, 220179
 
 str_detect(head(chart_labeled, 50), "systolic")

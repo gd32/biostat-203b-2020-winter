@@ -33,6 +33,15 @@ select(admits, starts_with("death"))
 
 ## Admission year
 
+summary(admits$admit_year)
+
+ggplot(admits) +
+  geom_boxplot(aes(x = "", y = admit_year), color = "navy") +
+  xlab("") +
+  ylab("Admission Year") +
+  theme(axis.ticks = element_blank()) +
+  ggtitle("Boxplot of Admission Year")
+
 ggplot(admits) +
   geom_bar(mapping = aes(x = admit_year), fill = "navy") + 
   xlab("Admission Year") +
@@ -45,7 +54,8 @@ ggplot(admits) +
   geom_bar(aes(x = admit_month), fill = "navy") +
   xlab("Admission Month") +
   ylab("Count") +
-  ggtitle("Frequency of Admissions by Month")
+  ggtitle("Frequency of Admissions by Month") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ## Admission day
 
@@ -55,16 +65,18 @@ ggplot(admits) +
   geom_bar(aes(x = admit_wday), fill = "navy") +
   xlab("Admission Day") +
   ylab("Count") +
-  ggtitle("Frequency of Admissions by Day of Week")
+  ggtitle("Frequency of Admissions by Day of Week") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ## Admission hour
-
-head(admits)
 
 admits = admits %>% mutate(admit_hour = hour(admit_time))
 
 ggplot(admits) + 
   geom_bar(aes(x = admit_hour), fill = "navy") +
+  scale_x_continuous(breaks = c(0, 4, 8, 12, 16, 20)) +
+  scale_y_continuous(expand = c(0, 0),
+                     limits = c(0, 5000)) +
   xlab("Admission Hour") +
   ylab("Count") +
   ggtitle("Frequency of Admissions by Hour")
@@ -77,11 +89,13 @@ ggplot(admits) +
   geom_histogram(aes(days_of_stay), fill = "navy", binwidth = 5) +
   xlab("Length of Stay (Days)") +
   ylab("Count") +
-  ggtitle("Frequency of Admission by Length of Stay")
+  ggtitle("Frequency of Admission by Length of Stay (Days)")
+
+summary(admits$days_of_stay)
            
 ## Admission type
 
-ggplot(distinct(admits)) +
+ggplot(admits) +
   geom_bar(aes(admit_type), fill = "navy") +
   xlab("Admit Type") +
   ylab("Count") +
@@ -95,10 +109,15 @@ ggplot() +
   ylab("Count") + 
   ggtitle("Number of Admissions per Patient")
 
+test = as.data.frame(table(admits$sub_id))
+
+test[order(-test$Freq),]
+
+summary(test$Freq)
+
 ## Admissions location
 
-admits %>% group_by(sub_id) %>% 
-ggplot() + 
+ggplot(admits) + 
   geom_bar(aes(admit_location), fill = "navy") +
   xlab("Admission Location") +
   ylab("Count") +
@@ -107,8 +126,7 @@ ggplot() +
 
 ## Insurance
 
-admits %>% group_by(sub_id) %>% 
-  ggplot() + 
+ggplot(admits) + 
   geom_bar(aes(insurance), fill = "navy") +
   xlab("Insurance Type") +
   ylab("Count") +
@@ -128,7 +146,7 @@ ggplot() +
 
 ## Religion
 
-admits %>% group_by(sub_id) %>% filter(n() == 1) %>%
+admits %>% group_by(sub_id) %>% filter(n() == 1) %>% select()
 ggplot() + 
   geom_bar(aes(religion), fill = "navy") +
   xlab("Religion") +
@@ -240,4 +258,13 @@ ggplot(icu) +
   ggtitle("Frequency of First ICU Unit")
 
 #gender
+
+icu_pts = left_join(icu, patients, by = "sub_id")
+
+ggplot(icu_pts) +
+  geom_bar(aes(gender), fill = "navy") +
+  xlab("Gender") +
+  ylab("Count") +
+  ggtitle("Gender among Patients with ICU Stay")
+
 #age

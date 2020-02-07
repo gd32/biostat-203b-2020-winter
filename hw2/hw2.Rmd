@@ -84,7 +84,7 @@ We can see that there are individual columns for admit year, admit month, and ad
 
 ## Admission year
 
-```{r}
+```{r, cache = T}
 summary(admits$admit_year)
 
 ggplot(admits) +
@@ -105,7 +105,7 @@ Overall, the distribution of admissions by year appears fairly uniform. Some exc
 
 ## Admission month
 
-```{r}
+```{r, cache = T}
 ggplot(admits) +
   geom_bar(aes(x = admit_month), fill = "navy") +
   xlab("Admission Month") +
@@ -118,7 +118,7 @@ Not much of a pattern to report here, but February appears to be the moth with t
 
 ## Admission day
 
-```{r}
+```{r, cache = T}
 admits = admits %>% mutate(admit_wday = wday(admit_time, label = T))
 
 ggplot(admits) +
@@ -134,7 +134,7 @@ Most admissions happen on Monday, after the low admission period of the weekend 
 
 ## Admission hour
 
-```{r}
+```{r, cache = T}
 admits = admits %>% mutate(admit_hour = hour(admit_time))
 
 ggplot(admits) +
@@ -148,3 +148,237 @@ ggplot(admits) +
 ```
 
 Admits are noticeably lower during the early morning hours (0-6 AM). There is a large peak at 7am, most likely because regular hospital staff come to work at that point and begin to process admissions. Admissions seem to peak outside of the opening rush between 4pm and 6pm.
+
+## Duration of Stay
+
+```{r, cache = T}
+admits = admits %>% 
+         mutate(days_of_stay = as.numeric((disch_time - admit_time), "days"))
+
+ggplot(admits) +
+  geom_histogram(aes(days_of_stay), fill = "navy", binwidth = 5) +
+  xlab("Length of Stay (Days)") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Length of Stay (Days)")
+
+mean(admits$days_of_stay)
+
+median(admits$days_of_stay)
+```
+
+Almost all admissions were less than 100 days. We can see that the mean admission duration was around 10 days and the median was about 6.5 days.
+
+## Admission type
+
+```{r, cache = T}
+ggplot(admits) +
+  geom_bar(aes(admit_type), fill = "navy") +
+  xlab("Admit Type") +
+  ylab("Count") +
+  ggtitle("Frequency of Admissions by Admit Type")
+```
+
+A majority of admissions were emergency-based. Elective and newborn/pregnancy-related admissions were about even in frequency.
+
+## Number of admissions per patient
+
+```{r, cache = T}
+ggplot() +
+  geom_bar(aes(table(admits$sub_id)), fill = "navy") +
+  xlab("Number of admissions per patient") +
+  ylab("Count") +
+  ggtitle("Number of Admissions per Patient")
+
+admit_count_table = as.data.frame(table(admits$sub_id))
+
+head(admit_count_table[order(-admit_count_table$Freq), ])
+
+max(admit_count_table$Freq)
+```
+
+While a great majority of patients were only admitted once in the dataset, we can see that some patients were admitted more than 20 times, with one patient being admitted 42 times.
+
+## Admissions location
+
+```{r, cache = T}
+
+admits %>% group_by(admit_location) %>% filter(n() > 500) %>%
+  ggplot() +
+  geom_bar(aes(admit_location), fill = "navy") +
+  xlab("Admission Location") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Location") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+For readibility, 3 categories of admission location with cell counts < 500 were excluded: No info, hmo/referral sick, and skilled nursing transfer. Like we saw previously, most admissions are emergency room-based.
+
+## Insurance
+
+```{r, cache = T}
+ggplot(admits) +
+  geom_bar(aes(insurance), fill = "navy") +
+  xlab("Insurance Type") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Insurance Type")
+```
+
+Patients with Medicare and those using private insurance represent the most admissions, as expected of a US-based patient base.
+
+## Language
+
+```{r}
+admit_unique = admits %>% group_by(sub_id) %>% filter(n() == 1)
+```
+
+First, create a dataset with only unique patients (i.e. only one admit per person).
+
+```{r, echo = T}
+admit_unique %>% group_by(language) %>% filter(n() > 5) %>%
+  ggplot() +
+  geom_bar(aes(language), fill = "navy") +
+  xlab("Language") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Language") +
+  theme(axis.text.x = element_text(
+    size = 5,
+    angle = 90,
+    hjust = 1
+  ))
+```
+
+First, we examine languages with cell counts > 5. As expected, a vast majority of patients who reported their language of choice chose English; more patients actually did not report a language at all. Let's exclude those groups and inspect further:
+
+```{r, echo = T}
+admit_unique %>% group_by(language) %>% filter(n() > 25 && n() < 5000) %>%
+  ggplot() +
+  geom_bar(aes(language), fill = "navy") +
+  xlab("Language") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Language (Non-English)") +
+  theme(axis.text.x = element_text(
+    size = 5,
+    angle = 90,
+    hjust = 1
+  ))
+```
+
+We now exclude cell counts less than 25 to visualize the most common non-English languages. Spanish was the most common at over 600 cases, with Pashtun, Russian, and Cantonese rounding out the top 5.
+
+## Religion
+
+```{r, cache = T}
+admit_unique %>% group_by(religion) %>%
+  ggplot() +
+  geom_bar(aes(religion), fill = "navy") +
+  xlab("Religion") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Religion") +
+  theme(axis.text.x = element_text(
+    size = 10,
+    angle = 90,
+    hjust = 1
+  ))
+```
+
+Like in our exploration of language, several religions appear much more frequently than others (Catholic, Jewish) and many patients did not report a religion (unobtainable, not specified). Let's look at the minor categories:
+
+```{r, cache = T}
+admit_unique %>% group_by(religion) %>% filter(n() < 1000) %>%
+  ggplot() +
+  geom_bar(aes(religion), fill = "navy") +
+  xlab("Religion") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Religion (Minor Categories)") +
+  theme(axis.text.x = element_text(
+    size = 10,
+    angle = 90,
+    hjust = 1
+  ))
+```
+
+Episcopalians and agnostic/atheists are the most common in the minor categories.
+
+## Marital Status
+
+```{r}
+admits %>% group_by(sub_id) %>% filter(n() == 1) %>%
+  ggplot() +
+  geom_bar(aes(mar_stat), fill = "navy") +
+  xlab("Marital Status") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Marital Status") +
+  theme(axis.text.x = element_text(
+    size = 10,
+    angle = 90,
+    hjust = 1
+  ))
+```
+
+Most admits were married; single and widowed where the next most frequent categories.
+
+## Ethnicity
+
+```{r}
+admit_unique %>% group_by(ethnicity) %>%
+  ggplot() +
+  geom_bar(aes(ethnicity), fill = "navy") +
+  xlab("Ethnicity") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Ethnicity") +
+  theme(axis.text.x = element_text(
+    size = 5,
+    angle = 90,
+    hjust = 1
+  ))
+```
+
+A large majority of the admitted patients where white; the next largest category is African Americans. Let's look at all other ethnicities:
+
+
+```{r}
+admit_unique %>% group_by(ethnicity) %>% filter(n() < 200) %>%
+  ggplot() +
+  geom_bar(aes(ethnicity), fill = "navy") +
+  xlab("Ethnicity") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Ethnicity (non-White)") +
+  theme(axis.text.x = element_text(
+    size = 5,
+    angle = 90,
+    hjust = 1
+  ))
+```
+
+Chinese patients were the most frequent ethnicity when excluding Whites, with Cape Verdians and Puerto Ricans being the next most reported. Note: The threshold of cell counts was set at 200 because between Whites/African Americans and these other groups, the only categories to appear are 'Declined to Answer' and 'Unknown'.
+
+## Death
+
+```{r, cache = T}
+admits = admits %>% mutate(survived = is.na(death_time))
+
+ggplot(admits) +
+  geom_bar(aes(survived, ..prop.., group = 1), fill = "navy") +
+  xlab("Survival Status") +
+  ylab("Count") +
+  ggtitle("Admissions by Survival Status") +
+  scale_x_discrete(labels = c("Died", "Survived")) +
+  theme(axis.text.x = element_text(
+    size = 10,
+    angle = 45,
+    hjust = 1
+  ))
+```
+
+Around 10% of admitted patients died.
+
+---
+
+# Question 2
+
+
+
+
+
+
+

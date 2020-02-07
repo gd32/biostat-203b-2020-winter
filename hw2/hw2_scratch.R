@@ -1,12 +1,12 @@
 library(dplyr)
+library(tidyverse)
 library(ggplot2)
 library(lubridate)
-
-install.packages('gridExtra')
 library(gridExtra)
 library(grid)
-
 library(stringr)
+library(magrittr)
+
 # Question 1
 
 # Load data
@@ -357,7 +357,7 @@ ggtitle("Gender among Patients with ICU Stay")
 
 # Age
 
-icu_admit_pts = left_join(admit_pts, icu, by = "hadm_id")
+icu_admit_pts = left_join(icu, admit_pts, by = "hadm_id")
 
 p1 = icu_admit_pts %>% filter(first_careunit == "CCU") %>% filter(admit_age <= 89) %>%
   ggplot() +
@@ -400,10 +400,6 @@ p5 = icu_admit_pts %>% filter(first_careunit == "TSICU") %>%
   ggtitle("TSICU") +
   scale_x_continuous(breaks = seq(0, 90, 10))
 
-library(magrittr)
-
-icu_admit_pts %>% filter(admit_age > 89) %$% summary(admit_age)
-
 p6 = icu_admit_pts %>% filter(admit_age > 89) %>%
   ggplot() +
   geom_histogram(aes(admit_age - 210), fill = "navy", binwidth = 2) +
@@ -426,29 +422,58 @@ grid.arrange(
 
 # Question 4
 
-chart_events = read_csv("/home/203bdata/mimic-iii/CHARTEVENTS.csv")
+# CHARTEVENTS.csv (https://mimic.physionet.org/mimictables/chartevents/) contains all the charted data available for a patient.
+# During their ICU stay, the primary repository of a patient’s information is their electronic chart. 
+# The ITEMID variable indicates a single measurement type in the database. The VALUE variable is the value measured for ITEMID.
+# 
+# D_ITEMS.csv (https://mimic.physionet.org/mimictables/d_items/) is the dictionary for the ITEMID in 
+# CHARTEVENTS.csv. Find potential values of ITEMID that correspond to systolic blood pressure, i.e., LABEL contains the string systolic.
+# 
+# Compile a tibble that contains the first ICU stay of unique patients, with the patient’s demographic information, 
+# the first systolic blood pressure measurement during ICU stay, and whether the patient died within 30 days of hospitcal admission.
 
-chart_events
+chart_events = read_csv("/home/203bdata/mimic-iii/CHARTEVENTS.csv")
 
 names(chart_events) = tolower(names(chart_events))
 
-names(chart_events) 
+dim(table(chart_events$subject_id))
 
 d_items = read_csv("/home/203bdata/mimic-iii/D_ITEMS.csv", col_types = "ddcccccccc")
 
-
 names(d_items) = tolower(names(d_items))
-
-names(d_items)
 
 chart_labeled = left_join(chart_events, d_items, by = "itemid")
 
-#CO2 %>% filter(str_detect(Treatment, "non"))
-
 chart_labeled
 
-chart_labeled %>% filter(str_detect(label, 'systolic')) %>% select(itemid, label) %$% table(itemid, label)
+chart_labeled %>% 
+  filter(str_detect(label, regex('systolic', ignore_case = T))) %>% 
+  select(itemid, label) %$% 
+  table(itemid, label)
 
-# use itemids 220050, 220059, 220179
+# use itemids 220050, 220059, 220179, 224167, 225309, 227243
 
-str_detect(head(chart_labeled, 50), "systolic")
+final_a = chart_labeled %>% 
+          filter(itemid %in% c(220050, 220059, 220179, 224167, 225309, 227243)) %>% 
+          group_by(subject_id) %>%
+          top_n(n = 1, wt = desc(charttime)) %>% filter(n() == 1) %>% 
+          select(subject_id, hadm_id, icustay_id, value, valuenum, valueuom) %>% arrange(subject_id) 
+
+
+final_a
+
+final_b = icu_admit_pts %>%
+  select(subject_id, hadm_id, first_careunit, admit_time, death_time, admit_type, admit_location, insurance, language, religion, mar_stat, ethnicity) %>% arrange(subject_id)
+
+final_b
+
+
+final_c = right_join(final_a, final_b, by ="hadm_id", "subject_id") %>% filter(!is.na(value)) 
+
+final_c
+
+final = final_c %>% mutate(died_within_30 = case_when(
+                                    is.na(death_time) ~ F, 
+                                    as.numeric(death_time - admit_time, "days") < 30 ~ T))
+                 
+final = final %>% select(subject_id.x, hadm_id, icustay_id, valuenum, valueuom, first_careunit, admit_time:died_within_30) %>% rename(subject_id = subject_id.x)

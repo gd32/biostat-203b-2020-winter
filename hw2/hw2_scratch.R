@@ -477,3 +477,5 @@ final = final_c %>% mutate(died_within_30 = case_when(
                                     as.numeric(death_time - admit_time, "days") < 30 ~ T))
                  
 final = final %>% select(subject_id.x, hadm_id, icustay_id, valuenum, valueuom, first_careunit, admit_time:died_within_30) %>% rename(subject_id = subject_id.x)
+
+final

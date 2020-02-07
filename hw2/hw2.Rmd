@@ -3,7 +3,6 @@ title: "HW2 Solutions"
 author: 
 - "George Dewey"
 - "UID: 704528320"
-date: "2/7/2020"
 output: html_document
 ---
 
@@ -11,22 +10,141 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+# Load Libraries
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r echo=T, results = 'hide'}
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(gridExtra)
+library(grid)
+library(stringr)
+library(magrittr)
 ```
 
-## Including Plots
+# Show session info
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+sessionInfo()
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+# Question 1 - Demographic Information of Admissions
+
+## Load data
+
+```{r}
+admits = read_csv("/home/203bdata/mimic-iii/ADMISSIONS.csv")
+```
+
+## Change column names
+
+```{r}
+col_names = c(
+  'rowid',
+  'sub_id',
+  'hadm_id',
+  'admit_time',
+  'disch_time',
+  'death_time',
+  'admit_type',
+  'admit_location',
+  'disch_location',
+  'insurance',
+  'language',
+  'religion',
+  'mar_stat',
+  'ethnicity',
+  'ed_reg_time',
+  'ed_out_time',
+  'diagnosis',
+  'hospital_exp_flag',
+  'has_chart_events'
+)
+
+names(admits) = col_names
+```
+
+I converted all column names to lowercase and renamed some for readability.
+
+## Parse out year/month/day from datetime columns
+
+```{r}
+admits = admits %>% mutate(
+  admit_year = year(admit_time),
+  admit_month = month(admit_time, label = T),
+  admit_day = day(admit_time)
+)
+
+select(admits, starts_with("admit"))
+```
+
+We can see that there are individual columns for admit year, admit month, and admit day.
+
+# Plotting
+
+## Admission year
+
+```{r}
+summary(admits$admit_year)
+
+ggplot(admits) +
+  geom_boxplot(aes(x = "", y = admit_year), color = "navy") +
+  xlab("") +
+  ylab("Admission Year") +
+  theme(axis.ticks = element_blank()) +
+  ggtitle("Boxplot of Admission Year")
+
+ggplot(admits) +
+  geom_bar(mapping = aes(x = admit_year), fill = "navy") +
+  xlab("Admission Year") +
+  ylab("Count") +
+  ggtitle("Frequency of Admissions by Year")
+```
+
+Overall, the distribution of admissions by year appears fairly uniform. Some exceptions include a noticeable peak around 2135 and a noticeable dropoff after 2200 - perhaps a data sourcing issue.
+
+## Admission month
+
+```{r}
+ggplot(admits) +
+  geom_bar(aes(x = admit_month), fill = "navy") +
+  xlab("Admission Month") +
+  ylab("Count") +
+  ggtitle("Frequency of Admissions by Month") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Not much of a pattern to report here, but February appears to be the moth with the lowest number of admissions while August seemed to be the month with the most admissions.
+
+## Admission day
+
+```{r}
+admits = admits %>% mutate(admit_wday = wday(admit_time, label = T))
+
+ggplot(admits) +
+  geom_bar(aes(x = admit_wday), fill = "navy") +
+  xlab("Admission Day") +
+  ylab("Count") +
+  ggtitle("Frequency of Admissions by Day of Week") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Most admissions happen on Monday, after the low admission period of the weekend (Sat/Sun). There is also a distinct decrease in admission counts through the week.
+
+
+## Admission hour
+
+```{r}
+admits = admits %>% mutate(admit_hour = hour(admit_time))
+
+ggplot(admits) +
+  geom_bar(aes(x = admit_hour), fill = "navy") +
+  scale_x_continuous(breaks = c(0, 4, 8, 12, 16, 20)) +
+  scale_y_continuous(expand = c(0, 0),
+                     limits = c(0, 5000)) +
+  xlab("Admission Hour") +
+  ylab("Count") +
+  ggtitle("Frequency of Admissions by Hour")
+```
+
+Admits are noticeably lower during the early morning hours (0-6 AM). There is a large peak at 7am, most likely because regular hospital staff come to work at that point and begin to process admissions. Admissions seem to peak outside of the opening rush between 4pm and 6pm.

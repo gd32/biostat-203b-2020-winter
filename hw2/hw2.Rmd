@@ -360,7 +360,7 @@ admits = admits %>% mutate(survived = is.na(death_time))
 ggplot(admits) +
   geom_bar(aes(survived, ..prop.., group = 1), fill = "navy") +
   xlab("Survival Status") +
-  ylab("Count") +
+  ylab("Proportion") +
   ggtitle("Admissions by Survival Status") +
   scale_x_discrete(labels = c("Died", "Survived")) +
   theme(axis.text.x = element_text(
@@ -376,7 +376,91 @@ Around 10% of admitted patients died.
 
 # Question 2
 
+## Load patient data
 
+```{r}
+patients = read_csv("/home/203bdata/mimic-iii/PATIENTS.csv")
+
+pt_colnames = c("row_id",
+                "sub_id",
+                "gender",
+                "dob",
+                "dod",
+                "dod_hosp",
+                "dod_ssn",
+                "exp_flag")
+
+names(patients) = pt_colnames
+```
+
+## Merge patient info with admission data
+
+```{r}
+admit_pts = left_join(admits, patients, by = "sub_id")
+```
+
+```{r, cache = T}
+ggplot(admit_pts) +
+  geom_bar(aes(x = gender, y = ..prop.., group = 1), fill = "navy") +
+  xlab("Gender") +
+  ylab("Proportion") +
+  scale_x_discrete(labels = c("Female", "Male")) +
+  ggtitle("Distribution of Gender in Admitted Patients") +
+  theme(axis.text.x = element_text(
+    size = 10,
+    angle = 45,
+    hjust = 1
+  ))
+```
+Around 45% of admitted patients were female (and thus around 55% were male).
+
+## Age at Admission
+
+### Create age at admission in years
+
+```{r}
+admit_pts = admit_pts %>%
+  mutate(admit_age = as.numeric(admit_time - dob, "weeks") / 52.25)
+```
+
+In the documentation, we find that ages above 89 were modified. Based on a plot of age with no modification, the discrepancy is obvious:
+
+```{r}
+ggplot(admit_pts) +
+  geom_histogram(aes(admit_age), fill = "navy", binwidth = 10) +
+  xlab("Age at Admission") +
+  ylab("Count") +
+  ggtitle("Distribution of Age at Admission")
+```
+
+Now we show two plots, one for ages 0-89, and one for ages over 89. Since it is unclear exactly how age was modified in patients whose age was greater than 89, I have retained the age modification institued by the original publishers (i.e. all ages are above 300).
+
+```{r}
+age1 = admit_pts %>% filter(admit_age <= 89) %>%
+        ggplot() +
+        geom_histogram(aes(admit_age), fill = "navy", binwidth = 5) +
+        xlab("Age at Admission") +
+        ylab("Count") +
+        scale_x_continuous(breaks = seq(0, 90, 10)) +
+        ggtitle("Ages 0-89")
+
+age2 = admit_pts %>% filter(admit_age > 89) %>%
+        ggplot() +
+        geom_histogram(aes(admit_age - 210), fill = "navy", binwidth = 2) +
+        xlab("Age at Admission") +
+        ylab("Count") +
+        scale_x_continuous(breaks = seq(90, 102, 2)) +
+        ggtitle("Ages 89+")
+
+
+grid.arrange(age1, 
+             age2, 
+             nrow = 1, 
+             top = textGrob("Age Distribution of Admitted Patients", 
+             gp = gpar(fontsize = 20, font = 2)))
+```
+
+We can see a noticeable block of admissions at age 0 (probably newborns who must be admitted after birth). As expect, admission count increases with age, decreasing past age 90 (likely due to low sample size of old patients).
 
 
 

@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Load Libraries
 
-```{r echo=T, results = 'hide'}
+```{r echo=T, results = 'hide', message = F, warning = F}
 library(tidyverse)
 library(ggplot2)
 library(lubridate)
@@ -116,7 +116,7 @@ ggplot(admits) +
 
 Not much of a pattern to report here, but February appears to be the moth with the lowest number of admissions while August seemed to be the month with the most admissions.
 
-## Admission day
+## Admission Day
 
 ```{r, cache = T}
 admits = admits %>% mutate(admit_wday = wday(admit_time, label = T))
@@ -132,7 +132,7 @@ ggplot(admits) +
 Most admissions happen on Monday, after the low admission period of the weekend (Sat/Sun). There is also a distinct decrease in admission counts through the week.
 
 
-## Admission hour
+## Admission Hour
 
 ```{r, cache = T}
 admits = admits %>% mutate(admit_hour = hour(admit_time))
@@ -168,7 +168,7 @@ median(admits$days_of_stay)
 
 Almost all admissions were less than 100 days. We can see that the mean admission duration was around 10 days and the median was about 6.5 days.
 
-## Admission type
+## Admission Type
 
 ```{r, cache = T}
 ggplot(admits) +
@@ -180,7 +180,7 @@ ggplot(admits) +
 
 A majority of admissions were emergency-based. Elective and newborn/pregnancy-related admissions were about even in frequency.
 
-## Number of admissions per patient
+## Admissions per Patient
 
 ```{r, cache = T}
 ggplot() +
@@ -198,7 +198,7 @@ max(admit_count_table$Freq)
 
 While a great majority of patients were only admitted once in the dataset, we can see that some patients were admitted more than 20 times, with one patient being admitted 42 times.
 
-## Admissions location
+## Admissions Location
 
 ```{r, cache = T}
 
@@ -433,7 +433,7 @@ ggplot(admit_pts) +
   ggtitle("Distribution of Age at Admission")
 ```
 
-Now we show two plots, one for ages 0-89, and one for ages over 89. Since it is unclear exactly how age was modified in patients whose age was greater than 89, I have retained the age modification institued by the original publishers (i.e. all ages are above 300).
+Now we show two plots, one for ages 0-89, and one for ages over 89. Since it is unclear exactly how age was modified in patients whose age was greater than 89, I made the assumption that all ages above 89 were increased by 210 (based on the original publishers' decision to make the real DOB 300 years before the admission date).
 
 ```{r}
 age1 = admit_pts %>% filter(admit_age <= 89) %>%
@@ -462,7 +462,144 @@ grid.arrange(age1,
 
 We can see a noticeable block of admissions at age 0 (probably newborns who must be admitted after birth). As expect, admission count increases with age, decreasing past age 90 (likely due to low sample size of old patients).
 
+---
+
+# Question 3
+
+## Load data, rename columns
+
+```{r}
+icu = read_csv("/home/203bdata/mimic-iii/ICUSTAYS.csv")
+
+names(icu) = tolower(names(icu))
+
+icu = icu %>% rename(sub_id = subject_id)
+```
+I also rename `subject_id` to `sub_id` to match variable names with `admissions`.
 
 
+## Length of ICU Stay
 
+```{r}
+ggplot(icu) +
+  geom_histogram(aes(los), fill = "navy", binwidth = 5) +
+  xlab("Length of ICU Stay") +
+  ylab("Count") +
+  ggtitle("Distribution of Length of ICU Stay (Days)")
+```
+A majority of ICU stays were between 1 and 50 days; 10 rows with null values were dropped.
 
+## First ICU unit
+
+```{r, cache = T}
+ggplot(icu) +
+  geom_bar(aes(first_careunit), fill = "navy") +
+  xlab("First ICU Unit") +
+  ylab("Count") +
+  ggtitle("Frequency of First ICU Unit") +
+  theme(axis.text.x = element_text(
+    size = 10,
+    angle = 45,
+    hjust = 1
+  ))
+```
+
+Most ICU admissions were in the MICU (Medical ICU for adults). 
+
+### Merge ICU stay data and Patients data
+
+```{r, cache = T}
+icu_pts = left_join(icu, patients, by = "sub_id")
+```
+
+## Gender
+
+```{r, cache = T}
+ggplot(icu_pts) +
+  geom_bar(aes(x = gender, y = ..prop.., group = 1), fill = "navy") +
+  xlab("Gender") +
+  ylab("Count") +
+  scale_x_discrete(labels = c("Female", "Male")) +
+ggtitle("Gender among Patients with ICU Stay")
+```
+
+Like in the admitted patients, around 45% of ICU admits are women.
+
+## Age
+
+### Merge ICU stays and Admitted Patients data
+
+```{r}
+icu_admit_pts = left_join(icu, admit_pts, by = "hadm_id")
+```
+
+### Place multiple plots on grid by First ICU Unit
+
+```{r}
+p1 = icu_admit_pts %>% filter(first_careunit == "CCU") %>% 
+  filter(admit_age <= 89) %>%
+  ggplot() +
+  geom_histogram(aes(admit_age), fill = "navy", binwidth = 5) +
+  xlab("Age at Admission") +
+  ylab("Count") +
+  ggtitle("CCU") +
+  scale_x_continuous(breaks = seq(0, 90, 10))
+
+p2 = icu_admit_pts %>% filter(first_careunit == "CSRU") %>% 
+  filter(admit_age <= 89) %>%
+  ggplot() +
+  geom_histogram(aes(admit_age), fill = "navy", binwidth = 5) +
+  xlab("Age at Admission") +
+  ylab("Count") +
+  ggtitle("CSRU") +
+  scale_x_continuous(breaks = seq(0, 90, 10))
+
+p3 = icu_admit_pts %>% filter(first_careunit == "MICU") %>% 
+  filter(admit_age <= 89) %>%
+  ggplot() +
+  geom_histogram(aes(admit_age), fill = "navy", binwidth = 5) +
+  xlab("Age at Admission") +
+  ylab("Count") +
+  ggtitle("MICU") +
+  scale_x_continuous(breaks = seq(0, 90, 10))
+
+p4 = icu_admit_pts %>% filter(first_careunit == "SICU") %>% 
+  filter(admit_age <= 89) %>%
+  ggplot() +
+  geom_histogram(aes(admit_age), fill = "navy", binwidth = 5) +
+  xlab("Age at Admission") +
+  ylab("Count") +
+  ggtitle("SICU") +
+  scale_x_continuous(breaks = seq(0, 90, 10))
+
+p5 = icu_admit_pts %>% filter(first_careunit == "TSICU") %>%
+  filter(admit_age <= 89) %>%
+  ggplot() +
+  geom_histogram(aes(admit_age), fill = "navy", binwidth = 5) +
+  xlab("Age at Admission") +
+  ylab("Count") +
+  ggtitle("TSICU") +
+  scale_x_continuous(breaks = seq(0, 90, 10))
+
+p6 = icu_admit_pts %>% filter(admit_age > 89) %>%
+  ggplot() +
+  geom_histogram(aes(admit_age - 210), fill = "navy", binwidth = 2) +
+  xlab("Age at Admission") +
+  ylab("Count") +
+  scale_x_continuous(breaks = seq(90, 100, 2)) +
+  ggtitle("Ages 89+, all ICUs")
+
+grid.arrange(
+  p1,
+  p2,
+  p3,
+  p4,
+  p5,
+  p6,
+  nrow = 2,
+  top = textGrob("Age Distribution of ICU Admits",
+                 gp = gpar(fontsize = 20, font = 2))
+)
+```
+
+NICU admits are* excluded from this visualization of age as all NICU admits are age 0 (as the NICU is the **Neonatal** ICU). To display ages of patients aged 89 and older, I followed the same procedure previously described when examining the admitted patients. For the remaining plots, we can see that overall, ICU admit count increases with age. Most interesting is the high frequency of admits in the TSICU (**Trauma Surgical** ICU) in patients aged 20-30; this is likely due to an increased occurence of motor vehicle accidents among this age group.

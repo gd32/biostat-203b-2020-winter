@@ -1,0 +1,737 @@
+---
+title: "HW2 Solutions"
+author: 
+- "George Dewey"
+- "UID: 704528320"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load Libraries
+
+```{r echo=T, results = 'hide', message = F, warning = F}
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(gridExtra)
+library(grid)
+library(stringr)
+library(magrittr)
+```
+
+# Show session info
+
+```{r}
+sessionInfo()
+```
+
+# Question 1 - Demographic Information of Admissions
+
+*Demographic information of the patients admitted into hospital is available in ADMISSION.csv. See https://mimic.physionet.org/mimictables/admissions/ for details of each field in this file. Summarize following variables using appropriate graphs: *
+
+* admission year
+* admission month
+* admission week day
+* admission hour
+* length of hospital stay
+* admission type
+* number of admissions per patient
+* admission location
+* insurance
+* language
+* religion
+* martial status
+* ethnicity
+* death
+
+## Load data
+
+```{r}
+admits = read_csv("/home/203bdata/mimic-iii/ADMISSIONS.csv")
+```
+
+## Change column names
+
+```{r}
+col_names = c(
+  'rowid',
+  'subject_id',
+  'hadm_id',
+  'admit_time',
+  'disch_time',
+  'death_time',
+  'admit_type',
+  'admit_location',
+  'disch_location',
+  'insurance',
+  'language',
+  'religion',
+  'mar_stat',
+  'ethnicity',
+  'ed_reg_time',
+  'ed_out_time',
+  'diagnosis',
+  'hospital_exp_flag',
+  'has_chart_events'
+)
+
+names(admits) = col_names
+```
+
+I converted all column names to lowercase and renamed some for readability.
+
+## Parse out year/month/day from datetime columns
+
+```{r}
+admits = admits %>% mutate(
+  admit_year = year(admit_time),
+  admit_month = month(admit_time, label = T),
+  admit_day = day(admit_time)
+)
+
+select(admits, starts_with("admit"))
+```
+
+We can see that there are individual columns for admit year, admit month, and admit day.
+
+# Plotting
+
+## Admission year
+
+```{r}
+summary(admits$admit_year)
+
+ggplot(admits) +
+  geom_boxplot(aes(x = "", y = admit_year), color = "navy") +
+  xlab("") +
+  ylab("Admission Year") +
+  theme(axis.ticks = element_blank()) +
+  ggtitle("Boxplot of Admission Year")
+
+ggplot(admits) +
+  geom_bar(mapping = aes(x = admit_year), fill = "navy") +
+  xlab("Admission Year") +
+  ylab("Count") +
+  ggtitle("Frequency of Admissions by Year")
+```
+
+Overall, the distribution of admissions by year appears fairly uniform. Some exceptions include a noticeable peak around 2135 and a noticeable dropoff after 2200 - perhaps a data sourcing issue.
+
+## Admission month
+
+```{r}
+ggplot(admits) +
+  geom_bar(aes(x = admit_month), fill = "navy") +
+  xlab("Admission Month") +
+  ylab("Count") +
+  ggtitle("Frequency of Admissions by Month") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Not much of a pattern to report here, but February appears to be the moth with the lowest number of admissions while August seemed to be the month with the most admissions.
+
+## Admission Day
+
+```{r}
+admits = admits %>% mutate(admit_wday = wday(admit_time, label = T))
+
+ggplot(admits) +
+  geom_bar(aes(x = admit_wday), fill = "navy") +
+  xlab("Admission Day") +
+  ylab("Count") +
+  ggtitle("Frequency of Admissions by Day of Week") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Most admissions happen on Monday, after the low admission period of the weekend (Sat/Sun). There is also a distinct decrease in admission counts through the week.
+
+## Admission Hour
+
+```{r}
+admits = admits %>% mutate(admit_hour = hour(admit_time))
+
+ggplot(admits) +
+  geom_bar(aes(x = admit_hour), fill = "navy") +
+  scale_x_continuous(breaks = c(0, 4, 8, 12, 16, 20)) +
+  scale_y_continuous(expand = c(0, 0),
+                     limits = c(0, 5000)) +
+  xlab("Admission Hour") +
+  ylab("Count") +
+  ggtitle("Frequency of Admissions by Hour")
+```
+
+Admits are noticeably lower during the early morning hours (0-6 AM). There is a large peak at 7am, most likely because regular hospital staff come to work at that point and begin to process admissions. Admissions seem to peak outside of the opening rush between 4pm and 6pm.
+
+## Duration of Stay
+
+```{r}
+admits = admits %>% 
+         mutate(days_of_stay = as.numeric((disch_time - admit_time), "days"))
+
+ggplot(admits) +
+  geom_histogram(aes(days_of_stay), fill = "navy", binwidth = 5) +
+  xlab("Length of Stay (Days)") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Length of Stay (Days)")
+
+mean(admits$days_of_stay)
+
+median(admits$days_of_stay)
+```
+
+Almost all admissions were less than 100 days. We can see that the mean admission duration was around 10 days and the median was about 6.5 days.
+
+## Admission Type
+
+```{r}
+ggplot(admits) +
+  geom_bar(aes(admit_type), fill = "navy") +
+  xlab("Admit Type") +
+  ylab("Count") +
+  ggtitle("Frequency of Admissions by Admit Type")
+```
+
+A majority of admissions were emergency-based. Elective and newborn/pregnancy-related admissions were about even in frequency.
+
+## Admissions per Patient
+
+```{r}
+ggplot() +
+  geom_bar(aes(table(admits$subject_id)), fill = "navy") +
+  xlab("Number of admissions per patient") +
+  ylab("Count") +
+  ggtitle("Number of Admissions per Patient")
+
+admit_count_table = as.data.frame(table(admits$subject_id))
+
+head(admit_count_table[order(-admit_count_table$Freq), ])
+
+max(admit_count_table$Freq)
+```
+
+While a great majority of patients were only admitted once in the dataset, we can see that some patients were admitted more than 20 times, with one patient being admitted 42 times.
+
+## Admissions Location
+
+```{r}
+
+admits %>% group_by(admit_location) %>% filter(n() > 500) %>%
+  ggplot() +
+  geom_bar(aes(admit_location), fill = "navy") +
+  xlab("Admission Location") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Location") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+For readibility, 3 categories of admission location with cell counts < 500 were excluded: No Information Provided, HMO/Referral sick, and Skilled Nursing Transfer. Like we saw previously, most admissions are emergency room-based.
+
+## Insurance
+
+```{r}
+ggplot(admits) +
+  geom_bar(aes(insurance), fill = "navy") +
+  xlab("Insurance Type") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Insurance Type")
+```
+
+Patients with Medicare and those using private insurance represent the most admissions, as expected of a US-based patient base.
+
+First, create a dataset with only unique patients (i.e. only one admit per person).
+
+```{r}
+admit_unique = admits %>% group_by(subject_id) %>% filter(n() == 1)
+```
+
+```{r}
+admit_unique %>% group_by(language) %>% filter(n() > 5) %>%
+  ggplot() +
+  geom_bar(aes(language), fill = "navy") +
+  xlab("Language") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Language") +
+  theme(axis.text.x = element_text(
+    size = 5,
+    angle = 90,
+    hjust = 1
+  ))
+```
+
+First, we examine languages with cell counts > 5. As expected, a vast majority of patients who reported their language of choice chose English; more patients actually did not report a language at all. Let's exclude those groups and inspect further:
+
+```{r}
+admit_unique %>% group_by(language) %>% filter(n() > 25 && n() < 5000) %>%
+  ggplot() +
+  geom_bar(aes(language), fill = "navy") +
+  xlab("Language") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Language (Non-English)") +
+  theme(axis.text.x = element_text(
+    size = 5,
+    angle = 90,
+    hjust = 1
+  ))
+```
+
+We now exclude cell counts less than 25 to visualize the most common non-English languages. Spanish was the most common at over 600 cases, with Pashtun, Russian, and Cantonese rounding out the top 5.
+
+## Religion
+
+```{r}
+admit_unique %>% group_by(religion) %>%
+  ggplot() +
+  geom_bar(aes(religion), fill = "navy") +
+  xlab("Religion") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Religion") +
+  theme(axis.text.x = element_text(
+    size = 10,
+    angle = 90,
+    hjust = 1
+  ))
+```
+
+Like in our exploration of language, several religions appear much more frequently than others (Catholic, Jewish) and many patients did not report a religion (unobtainable, not specified). Let's look at the minor categories:
+
+```{r}
+admit_unique %>% group_by(religion) %>% filter(n() < 1000) %>%
+  ggplot() +
+  geom_bar(aes(religion), fill = "navy") +
+  xlab("Religion") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Religion (Minor Categories)") +
+  theme(axis.text.x = element_text(
+    size = 10,
+    angle = 90,
+    hjust = 1
+  ))
+```
+
+Episcopalians and agnostic/atheists are the most common in the minor categories.
+
+## Marital Status
+
+```{r}
+admits %>% group_by(subject_id) %>% filter(n() == 1) %>%
+  ggplot() +
+  geom_bar(aes(mar_stat), fill = "navy") +
+  xlab("Marital Status") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Marital Status") +
+  theme(axis.text.x = element_text(
+    size = 10,
+    angle = 90,
+    hjust = 1
+  ))
+```
+
+Most admits were married; single and widowed where the next most frequent categories.
+
+## Ethnicity
+
+```{r}
+admit_unique %>% group_by(ethnicity) %>%
+  ggplot() +
+  geom_bar(aes(ethnicity), fill = "navy") +
+  xlab("Ethnicity") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Ethnicity") +
+  theme(axis.text.x = element_text(
+    size = 5,
+    angle = 90,
+    hjust = 1
+  ))
+```
+
+A large majority of the admitted patients where white; the next largest category is African Americans. Let's look at all other ethnicities:
+
+
+```{r}
+admit_unique %>% group_by(ethnicity) %>% filter(n() < 200) %>%
+  ggplot() +
+  geom_bar(aes(ethnicity), fill = "navy") +
+  xlab("Ethnicity") +
+  ylab("Count") +
+  ggtitle("Frequency of Admission by Ethnicity (non-White)") +
+  theme(axis.text.x = element_text(
+    size = 5,
+    angle = 90,
+    hjust = 1
+  ))
+```
+
+Chinese patients were the most frequent ethnicity when excluding Whites, with Cape Verdians and Puerto Ricans being the next most reported. Note: The threshold of cell counts was set at 200 because between Whites/African Americans and these other groups, the only categories to appear are 'Declined to Answer' and 'Unknown'.
+
+## Death
+
+```{r}
+admits = admits %>% mutate(survived = is.na(death_time))
+
+ggplot(admits) +
+  geom_bar(aes(survived, ..prop.., group = 1), fill = "navy") +
+  xlab("Survival Status") +
+  ylab("Proportion") +
+  ggtitle("Admissions by Survival Status") +
+  scale_x_discrete(labels = c("Died", "Survived")) +
+  theme(axis.text.x = element_text(
+    size = 10,
+    angle = 45,
+    hjust = 1
+  ))
+```
+
+Around 10% of admitted patients died.
+
+---
+
+# Question 2 - Combining Patient Data with Admissions
+
+*Link the data in ADMISSION.csv and PATIENTS.csv (https://mimic.physionet.org/mimictables/patients/) and summarize following variables using appropriate graphs:*
+
+* gender
+* age at admission
+
+## Load patient data
+
+```{r}
+patients = read_csv("/home/203bdata/mimic-iii/PATIENTS.csv")
+
+pt_colnames = c("row_id",
+                "subject_id",
+                "gender",
+                "dob",
+                "dod",
+                "dod_hosp",
+                "dod_ssn",
+                "exp_flag")
+
+names(patients) = pt_colnames
+```
+
+## Merge patient info with admission data
+
+```{r}
+admit_pts = left_join(admits, patients, by = "subject_id")
+```
+
+```{r}
+ggplot(admit_pts) +
+  geom_bar(aes(x = gender, y = ..prop.., group = 1), fill = "navy") +
+  xlab("Gender") +
+  ylab("Proportion") +
+  scale_x_discrete(labels = c("Female", "Male")) +
+  ggtitle("Distribution of Gender in Admitted Patients") +
+  theme(axis.text.x = element_text(
+    size = 10,
+    angle = 45,
+    hjust = 1
+  ))
+```
+Around 45% of admitted patients were female (and thus around 55% were male).
+
+## Age at Admission
+
+### Create age at admission in years
+
+```{r}
+admit_pts = admit_pts %>%
+  mutate(admit_age = as.numeric(admit_time - dob, "weeks") / 52.25)
+```
+
+In the documentation, we find that ages above 89 were modified. Based on a plot of age with no modification, the discrepancy is obvious:
+
+```{r}
+ggplot(admit_pts) +
+  geom_histogram(aes(admit_age), fill = "navy", binwidth = 10) +
+  xlab("Age at Admission") +
+  ylab("Count") +
+  ggtitle("Distribution of Age at Admission")
+```
+
+Now we show two plots, one for ages 0-89, and one for ages over 89. Since it is unclear exactly how age was modified in patients whose age was greater than 89, I made the assumption that all ages above 89 were increased by 210 (based on the original publishers' decision to make the real DOB 300 years before the admission date).
+
+```{r}
+age1 = admit_pts %>% filter(admit_age <= 89) %>%
+        ggplot() +
+        geom_histogram(aes(admit_age), fill = "navy", binwidth = 5) +
+        xlab("Age at Admission") +
+        ylab("Count") +
+        scale_x_continuous(breaks = seq(0, 90, 10)) +
+        ggtitle("Ages 0-89")
+
+age2 = admit_pts %>% filter(admit_age > 89) %>%
+        ggplot() +
+        geom_histogram(aes(admit_age - 210), fill = "navy", binwidth = 2) +
+        xlab("Age at Admission") +
+        ylab("Count") +
+        scale_x_continuous(breaks = seq(90, 102, 2)) +
+        ggtitle("Ages 89+")
+
+
+grid.arrange(age1, 
+             age2, 
+             nrow = 1, 
+             top = textGrob("Age Distribution of Admitted Patients", 
+             gp = gpar(fontsize = 20, font = 2)))
+```
+
+We can see a noticeable block of admissions at age 0 (probably newborns who must be admitted after birth). As expect, admission count increases with age, decreasing past age 90 (likely due to low sample size of old patients).
+
+---
+
+# Question 3 - Demographics of ICU Admits
+
+*ICUSTAYS.csv (https://mimic.physionet.org/mimictables/icustays/) contains data about Intensive Care Units (ICU) stays. Summarize following variables using appropriate graphs:*
+
+* length of ICU stay
+* first ICU unit
+* gender
+* age
+
+## Load data, rename columns
+
+```{r}
+icu = read_csv("/home/203bdata/mimic-iii/ICUSTAYS.csv")
+
+names(icu) = tolower(names(icu))
+```
+
+## Length of ICU Stay
+
+```{r}
+ggplot(icu) +
+  geom_histogram(aes(los), fill = "navy", binwidth = 5) +
+  xlab("Length of ICU Stay") +
+  ylab("Count") +
+  ggtitle("Distribution of Length of ICU Stay (Days)")
+```
+A majority of ICU stays were between 1 and 50 days; 10 rows with null values were dropped.
+
+## First ICU unit
+
+```{r}
+ggplot(icu) +
+  geom_bar(aes(first_careunit), fill = "navy") +
+  xlab("First ICU Unit") +
+  ylab("Count") +
+  ggtitle("Frequency of First ICU Unit") +
+  theme(axis.text.x = element_text(
+    size = 10,
+    angle = 45,
+    hjust = 1
+  ))
+```
+
+Most ICU admissions were in the MICU (Medical ICU for adults). 
+
+### Merge ICU stay data and Patients data
+
+```{r}
+icu_pts = left_join(icu, patients, by = "subject_id")
+```
+
+## Gender
+
+```{r}
+ggplot(icu_pts) +
+  geom_bar(aes(x = gender, y = ..prop.., group = 1), fill = "navy") +
+  xlab("Gender") +
+  ylab("Count") +
+  scale_x_discrete(labels = c("Female", "Male")) +
+ggtitle("Gender among Patients with ICU Stay")
+```
+
+Like in the admitted patients, around 45% of ICU admits are women.
+
+## Age
+
+### Merge ICU stays and Admitted Patients data
+
+```{r}
+icu_admit_pts = left_join(icu, admit_pts, by = "hadm_id")
+```
+
+### Place multiple plots on grid by First ICU Unit
+
+```{r}
+p1 = icu_admit_pts %>% filter(first_careunit == "CCU") %>% 
+  filter(admit_age <= 89) %>%
+  ggplot() +
+  geom_histogram(aes(admit_age), fill = "navy", binwidth = 5) +
+  xlab("Age at Admission") +
+  ylab("Count") +
+  ggtitle("CCU") +
+  scale_x_continuous(breaks = seq(0, 90, 10))
+
+p2 = icu_admit_pts %>% filter(first_careunit == "CSRU") %>% 
+  filter(admit_age <= 89) %>%
+  ggplot() +
+  geom_histogram(aes(admit_age), fill = "navy", binwidth = 5) +
+  xlab("Age at Admission") +
+  ylab("Count") +
+  ggtitle("CSRU") +
+  scale_x_continuous(breaks = seq(0, 90, 10))
+
+p3 = icu_admit_pts %>% filter(first_careunit == "MICU") %>% 
+  filter(admit_age <= 89) %>%
+  ggplot() +
+  geom_histogram(aes(admit_age), fill = "navy", binwidth = 5) +
+  xlab("Age at Admission") +
+  ylab("Count") +
+  ggtitle("MICU") +
+  scale_x_continuous(breaks = seq(0, 90, 10))
+
+p4 = icu_admit_pts %>% filter(first_careunit == "SICU") %>% 
+  filter(admit_age <= 89) %>%
+  ggplot() +
+  geom_histogram(aes(admit_age), fill = "navy", binwidth = 5) +
+  xlab("Age at Admission") +
+  ylab("Count") +
+  ggtitle("SICU") +
+  scale_x_continuous(breaks = seq(0, 90, 10))
+
+p5 = icu_admit_pts %>% filter(first_careunit == "TSICU") %>%
+  filter(admit_age <= 89) %>%
+  ggplot() +
+  geom_histogram(aes(admit_age), fill = "navy", binwidth = 5) +
+  xlab("Age at Admission") +
+  ylab("Count") +
+  ggtitle("TSICU") +
+  scale_x_continuous(breaks = seq(0, 90, 10))
+
+p6 = icu_admit_pts %>% filter(admit_age > 89) %>%
+  ggplot() +
+  geom_histogram(aes(admit_age - 210), fill = "navy", binwidth = 2) +
+  xlab("Age at Admission") +
+  ylab("Count") +
+  scale_x_continuous(breaks = seq(90, 100, 2)) +
+  ggtitle("Ages 89+, all ICUs")
+
+grid.arrange(
+  p1,
+  p2,
+  p3,
+  p4,
+  p5,
+  p6,
+  nrow = 2,
+  top = textGrob("Age Distribution of ICU Admits",
+                 gp = gpar(fontsize = 20, font = 2))
+)
+```
+
+NICU admits are excluded from this visualization of age as all NICU admits are age 0 (as the NICU is the **Neonatal** ICU). To display ages of patients aged 89 and older, I followed the same procedure previously described when examining the admitted patients. For the remaining plots, we can see that overall, ICU admit count increases with age. Most interesting is the high frequency of admits in the TSICU (**Trauma Surgical** ICU) in patients aged 20-30; this is likely due to an increased occurence of motor vehicle accidents among this age group.
+
+# Question 4 - Compiling Measurements with Patient Stay Data
+
+*Compile a tibble that contains the first ICU stay of unique patients, with the patient’s demographic information, the first systolic blood pressure measurement during ICU stay, and whether the patient died within 30 days of hospitcal admission.*
+
+## Import data and rename columns
+
+```{r}
+chart_events = read_csv("/home/203bdata/mimic-iii/CHARTEVENTS.csv")
+
+names(chart_events) = tolower(names(chart_events))
+
+d_items = read_csv("/home/203bdata/mimic-iii/D_ITEMS.csv", col_types = "ddcccccccc")
+
+names(d_items) = tolower(names(d_items))
+```
+
+The string `""ddcccccccc"` is shorthand for data types where `d` is `dbl` and `c` is `chr`.
+
+## Obtain Item IDs for Systolic BP
+
+```{r}
+chart_labeled = left_join(chart_events, d_items, by = "itemid")
+
+chart_labeled %>% 
+  filter(str_detect(label, regex('systolic', ignore_case = T))) %>% 
+  select(itemid, label) %$% 
+  table(itemid, label)
+```
+
+We merge `chart_events` with the item dictionary `d_items` by itemid to form the combined dataset `chart_labeled`. We then search the `label` column for any case of "systolic" and return a table of appropriate item IDs and their corresponding label.
+
+From the table, we will use itemids 220050, 220059, 220179, 224167, 225309, 227243 to find systolic BP measures.
+
+## Build Final Tibble
+
+```{r}
+final_a = chart_labeled %>% 
+          filter(itemid %in% c(220050, 220059, 220179, 224167, 225309, 227243)) %>% 
+          group_by(subject_id) %>%
+          top_n(n = 1, wt = desc(charttime)) %>% filter(n() == 1) %>% 
+          select(subject_id, hadm_id, icustay_id, value, valuenum, valueuom) %>% arrange(subject_id) 
+```
+
+Here, we find all mentions of the `itemID`s we found previously, then group by `subject_id` and find the first chart time for each subject ID. Afterwards, we select the relevant columns we need from `chart_labeled` for the final tibble.
+
+```{r}
+final_b = icu_admit_pts %>% select(-subject_id.y) %>% 
+          rename(subject_id = subject_id.x) %>%
+          select(subject_id, hadm_id, first_careunit, admit_time, death_time, 
+          admit_type, admit_location, insurance, language, religion, mar_stat, 
+          ethnicity, hospital_exp_flag) %>% arrange(subject_id)
+```
+
+We select demographic info for patients to be merged with `final_a` created before.
+
+## Join datasets
+
+```{r}
+final_c = right_join(final_a, final_b, by = "hadm_id", "subject_id") %>% 
+          filter(!is.na(value)) 
+```
+
+We merge the charted events with labels with the demographic data by `hadm_id` and `subject_id` and drop all patients with no report of systolic BP. I chose to drop patients with no measurement for presentation purposes, but it could be interesting to explore differences between those with systolic BP measurements and those without. 
+
+## Create variable to check if patient died within 30 days of admission
+
+final_c %>% 
+
+```{r}
+final = final_c %>% 
+        mutate(died_within_30 = case_when(
+               hospital_exp_flag == F ~ "No", 
+               as.numeric(death_time - admit_time, "days") >= 30 ~ "No",
+               as.numeric(death_time - admit_time, "days") < 30 ~ "Yes"))
+
+final_selected = final %>% select(subject_id.x, hadm_id, icustay_id, valuenum, 
+                 valueuom, first_careunit, admit_time:died_within_30) %>% 
+                 rename(subject_id = subject_id.x)
+
+final_selected
+```
+
+It is interesting that only 453 patients had systolic BP measurements - it seems that the `chartevents` selection is only a random sample of chart events from patients in the dataset.
+
+## Visualize systolic BP measurements and deaths within 30 days of admission
+
+```{r}
+final_selected %>%
+  ggplot() +
+  geom_histogram(aes(valuenum), fill = "navy", binwidth = 5) +
+  xlab("Systolic BP, mmHg") +
+  ylab("Count") +
+  ggtitle("First Systolic BP Measured for Selected ICU Patients")
+```
+
+The distribution of first systolic BP measurement appears somewhat normal; however there are some people with serious issues with blood pressure (i.e. those with BP < 50 or BP > 180).
+
+```{r}
+final_selected %>% 
+  ggplot() +
+  geom_bar(aes(died_within_30, y = ..prop.., group = 1), 
+           fill = "navy") +
+  xlab("Died within 30 days of Admission") +
+  ylab("Proportion") +
+  ggtitle("Death Status of Patients in First 30 Days of Admission",
+          subtitle = "First ICU Stay Only")
+```
+
+About 12% of patients with systolic BP measurements from their first ICU stay died within the first 30 days of admission.

@@ -647,14 +647,12 @@ final_a = chart_labeled %>%
 
 Here, we find all mentions of the `itemID`s we found previously, then group by `subject_id` and find the first chart time for each subject ID. Afterwards, we select the relevant columns we need from `chart_labeled` for the final tibble.
 
-icu_admit_pts %>% select(contains('subject_id'))
-
 ```{r}
 final_b = icu_admit_pts %>% select(-subject_id.y) %>% 
           rename(subject_id = subject_id.x) %>%
           select(subject_id, hadm_id, first_careunit, admit_time, death_time, 
           admit_type, admit_location, insurance, language, religion, mar_stat, 
-          ethnicity) %>% arrange(subject_id)
+          ethnicity, hospital_exp_flag) %>% arrange(subject_id)
 ```
 
 We select demographic info for patients to be merged with `final_a` created before.
@@ -670,11 +668,14 @@ We merge the charted events with labels with the demographic data by `hadm_id` a
 
 ## Create variable to check if patient died within 30 days of admission
 
+final_c %>% 
+
 ```{r}
 final = final_c %>% 
-        mutate(died_within_30 = 
-               case_when(is.na(death_time) ~ F, 
-               as.numeric(death_time - admit_time, "days") < 30 ~ T))
+        mutate(died_within_30 = case_when(
+               hospital_exp_flag == F ~ "No", 
+               as.numeric(death_time - admit_time, "days") >= 30 ~ "No",
+               as.numeric(death_time - admit_time, "days") < 30 ~ "Yes"))
 
 final_selected = final %>% select(subject_id.x, hadm_id, icustay_id, valuenum, 
                  valueuom, first_careunit, admit_time:died_within_30) %>% 
@@ -703,7 +704,10 @@ final_selected %>%
   ggplot() +
   geom_bar(aes(died_within_30, y = ..prop.., group = 1), 
            fill = "navy") +
-  xlab("Died within 30 days of admission") +
+  xlab("Died within 30 days of Admission") +
   ylab("Proportion") +
-  ggtitle("Death Status of Patients in First ICU Stay")
+  ggtitle("Death Status of Patients in First 30 Days of Admission",
+          subtitle = "First ICU Stay Only")
 ```
+
+About 12% of patients with systolic BP measurements from their first ICU stay died within the first 30 days of admission.

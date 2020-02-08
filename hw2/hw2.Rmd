@@ -30,6 +30,23 @@ sessionInfo()
 
 # Question 1 - Demographic Information of Admissions
 
+*Demographic information of the patients admitted into hospital is available in ADMISSION.csv. See https://mimic.physionet.org/mimictables/admissions/ for details of each field in this file. Summarize following variables using appropriate graphs: *
+
+* admission year
+* admission month
+* admission week day
+* admission hour
+* length of hospital stay
+* admission type
+* number of admissions per patient
+* admission location
+* insurance
+* language
+* religion
+* martial status
+* ethnicity
+* death
+
 ## Load data
 
 ```{r}
@@ -84,7 +101,7 @@ We can see that there are individual columns for admit year, admit month, and ad
 
 ## Admission year
 
-```{r, cache = T}
+```{r}
 summary(admits$admit_year)
 
 ggplot(admits) +
@@ -105,7 +122,7 @@ Overall, the distribution of admissions by year appears fairly uniform. Some exc
 
 ## Admission month
 
-```{r, cache = T}
+```{r}
 ggplot(admits) +
   geom_bar(aes(x = admit_month), fill = "navy") +
   xlab("Admission Month") +
@@ -118,7 +135,7 @@ Not much of a pattern to report here, but February appears to be the moth with t
 
 ## Admission Day
 
-```{r, cache = T}
+```{r}
 admits = admits %>% mutate(admit_wday = wday(admit_time, label = T))
 
 ggplot(admits) +
@@ -131,10 +148,9 @@ ggplot(admits) +
 
 Most admissions happen on Monday, after the low admission period of the weekend (Sat/Sun). There is also a distinct decrease in admission counts through the week.
 
-
 ## Admission Hour
 
-```{r, cache = T}
+```{r}
 admits = admits %>% mutate(admit_hour = hour(admit_time))
 
 ggplot(admits) +
@@ -151,7 +167,7 @@ Admits are noticeably lower during the early morning hours (0-6 AM). There is a 
 
 ## Duration of Stay
 
-```{r, cache = T}
+```{r}
 admits = admits %>% 
          mutate(days_of_stay = as.numeric((disch_time - admit_time), "days"))
 
@@ -170,7 +186,7 @@ Almost all admissions were less than 100 days. We can see that the mean admissio
 
 ## Admission Type
 
-```{r, cache = T}
+```{r}
 ggplot(admits) +
   geom_bar(aes(admit_type), fill = "navy") +
   xlab("Admit Type") +
@@ -182,7 +198,7 @@ A majority of admissions were emergency-based. Elective and newborn/pregnancy-re
 
 ## Admissions per Patient
 
-```{r, cache = T}
+```{r}
 ggplot() +
   geom_bar(aes(table(admits$subject_id)), fill = "navy") +
   xlab("Number of admissions per patient") +
@@ -200,7 +216,7 @@ While a great majority of patients were only admitted once in the dataset, we ca
 
 ## Admissions Location
 
-```{r, cache = T}
+```{r}
 
 admits %>% group_by(admit_location) %>% filter(n() > 500) %>%
   ggplot() +
@@ -215,7 +231,7 @@ For readibility, 3 categories of admission location with cell counts < 500 were 
 
 ## Insurance
 
-```{r, cache = T}
+```{r}
 ggplot(admits) +
   geom_bar(aes(insurance), fill = "navy") +
   xlab("Insurance Type") +
@@ -225,15 +241,13 @@ ggplot(admits) +
 
 Patients with Medicare and those using private insurance represent the most admissions, as expected of a US-based patient base.
 
-## Language
+First, create a dataset with only unique patients (i.e. only one admit per person).
 
 ```{r}
 admit_unique = admits %>% group_by(subject_id) %>% filter(n() == 1)
 ```
 
-First, create a dataset with only unique patients (i.e. only one admit per person).
-
-```{r, echo = T}
+```{r}
 admit_unique %>% group_by(language) %>% filter(n() > 5) %>%
   ggplot() +
   geom_bar(aes(language), fill = "navy") +
@@ -249,7 +263,7 @@ admit_unique %>% group_by(language) %>% filter(n() > 5) %>%
 
 First, we examine languages with cell counts > 5. As expected, a vast majority of patients who reported their language of choice chose English; more patients actually did not report a language at all. Let's exclude those groups and inspect further:
 
-```{r, echo = T}
+```{r}
 admit_unique %>% group_by(language) %>% filter(n() > 25 && n() < 5000) %>%
   ggplot() +
   geom_bar(aes(language), fill = "navy") +
@@ -267,7 +281,7 @@ We now exclude cell counts less than 25 to visualize the most common non-English
 
 ## Religion
 
-```{r, cache = T}
+```{r}
 admit_unique %>% group_by(religion) %>%
   ggplot() +
   geom_bar(aes(religion), fill = "navy") +
@@ -283,7 +297,7 @@ admit_unique %>% group_by(religion) %>%
 
 Like in our exploration of language, several religions appear much more frequently than others (Catholic, Jewish) and many patients did not report a religion (unobtainable, not specified). Let's look at the minor categories:
 
-```{r, cache = T}
+```{r}
 admit_unique %>% group_by(religion) %>% filter(n() < 1000) %>%
   ggplot() +
   geom_bar(aes(religion), fill = "navy") +
@@ -354,7 +368,7 @@ Chinese patients were the most frequent ethnicity when excluding Whites, with Ca
 
 ## Death
 
-```{r, cache = T}
+```{r}
 admits = admits %>% mutate(survived = is.na(death_time))
 
 ggplot(admits) +
@@ -375,6 +389,11 @@ Around 10% of admitted patients died.
 ---
 
 # Question 2 - Combining Patient Data with Admissions
+
+*Link the data in ADMISSION.csv and PATIENTS.csv (https://mimic.physionet.org/mimictables/patients/) and summarize following variables using appropriate graphs:*
+
+* gender
+* age at admission
 
 ## Load patient data
 
@@ -399,7 +418,7 @@ names(patients) = pt_colnames
 admit_pts = left_join(admits, patients, by = "subject_id")
 ```
 
-```{r, cache = T}
+```{r}
 ggplot(admit_pts) +
   geom_bar(aes(x = gender, y = ..prop.., group = 1), fill = "navy") +
   xlab("Gender") +
@@ -466,6 +485,13 @@ We can see a noticeable block of admissions at age 0 (probably newborns who must
 
 # Question 3 - Demographics of ICU Admits
 
+*ICUSTAYS.csv (https://mimic.physionet.org/mimictables/icustays/) contains data about Intensive Care Units (ICU) stays. Summarize following variables using appropriate graphs:*
+
+* length of ICU stay
+* first ICU unit
+* gender
+* age
+
 ## Load data, rename columns
 
 ```{r}
@@ -487,7 +513,7 @@ A majority of ICU stays were between 1 and 50 days; 10 rows with null values wer
 
 ## First ICU unit
 
-```{r, cache = T}
+```{r}
 ggplot(icu) +
   geom_bar(aes(first_careunit), fill = "navy") +
   xlab("First ICU Unit") +
@@ -504,13 +530,13 @@ Most ICU admissions were in the MICU (Medical ICU for adults).
 
 ### Merge ICU stay data and Patients data
 
-```{r, cache = T}
+```{r}
 icu_pts = left_join(icu, patients, by = "subject_id")
 ```
 
 ## Gender
 
-```{r, cache = T}
+```{r}
 ggplot(icu_pts) +
   geom_bar(aes(x = gender, y = ..prop.., group = 1), fill = "navy") +
   xlab("Gender") +
@@ -528,8 +554,6 @@ Like in the admitted patients, around 45% of ICU admits are women.
 ```{r}
 icu_admit_pts = left_join(icu, admit_pts, by = "hadm_id")
 ```
-
-
 
 ### Place multiple plots on grid by First ICU Unit
 
@@ -688,7 +712,7 @@ It is interesting that only 453 patients had systolic BP measurements - it seems
 
 ## Visualize systolic BP measurements and deaths within 30 days of admission
 
-```{r, cache = T}
+```{r}
 final_selected %>%
   ggplot() +
   geom_histogram(aes(valuenum), fill = "navy", binwidth = 5) +
@@ -699,7 +723,7 @@ final_selected %>%
 
 The distribution of first systolic BP measurement appears somewhat normal; however there are some people with serious issues with blood pressure (i.e. those with BP < 50 or BP > 180).
 
-```{r, cache = T}
+```{r}
 final_selected %>% 
   ggplot() +
   geom_bar(aes(died_within_30, y = ..prop.., group = 1), 

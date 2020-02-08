@@ -41,7 +41,7 @@ admits = read_csv("/home/203bdata/mimic-iii/ADMISSIONS.csv")
 ```{r}
 col_names = c(
   'rowid',
-  'sub_id',
+  'subject_id',
   'hadm_id',
   'admit_time',
   'disch_time',
@@ -184,12 +184,12 @@ A majority of admissions were emergency-based. Elective and newborn/pregnancy-re
 
 ```{r, cache = T}
 ggplot() +
-  geom_bar(aes(table(admits$sub_id)), fill = "navy") +
+  geom_bar(aes(table(admits$subject_id)), fill = "navy") +
   xlab("Number of admissions per patient") +
   ylab("Count") +
   ggtitle("Number of Admissions per Patient")
 
-admit_count_table = as.data.frame(table(admits$sub_id))
+admit_count_table = as.data.frame(table(admits$subject_id))
 
 head(admit_count_table[order(-admit_count_table$Freq), ])
 
@@ -211,7 +211,7 @@ admits %>% group_by(admit_location) %>% filter(n() > 500) %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-For readibility, 3 categories of admission location with cell counts < 500 were excluded: No info, hmo/referral sick, and skilled nursing transfer. Like we saw previously, most admissions are emergency room-based.
+For readibility, 3 categories of admission location with cell counts < 500 were excluded: No Information Provided, HMO/Referral sick, and Skilled Nursing Transfer. Like we saw previously, most admissions are emergency room-based.
 
 ## Insurance
 
@@ -228,7 +228,7 @@ Patients with Medicare and those using private insurance represent the most admi
 ## Language
 
 ```{r}
-admit_unique = admits %>% group_by(sub_id) %>% filter(n() == 1)
+admit_unique = admits %>% group_by(subject_id) %>% filter(n() == 1)
 ```
 
 First, create a dataset with only unique patients (i.e. only one admit per person).
@@ -302,7 +302,7 @@ Episcopalians and agnostic/atheists are the most common in the minor categories.
 ## Marital Status
 
 ```{r}
-admits %>% group_by(sub_id) %>% filter(n() == 1) %>%
+admits %>% group_by(subject_id) %>% filter(n() == 1) %>%
   ggplot() +
   geom_bar(aes(mar_stat), fill = "navy") +
   xlab("Marital Status") +
@@ -374,7 +374,7 @@ Around 10% of admitted patients died.
 
 ---
 
-# Question 2
+# Question 2 - Combining Patient Data with Admissions
 
 ## Load patient data
 
@@ -382,7 +382,7 @@ Around 10% of admitted patients died.
 patients = read_csv("/home/203bdata/mimic-iii/PATIENTS.csv")
 
 pt_colnames = c("row_id",
-                "sub_id",
+                "subject_id",
                 "gender",
                 "dob",
                 "dod",
@@ -396,7 +396,7 @@ names(patients) = pt_colnames
 ## Merge patient info with admission data
 
 ```{r}
-admit_pts = left_join(admits, patients, by = "sub_id")
+admit_pts = left_join(admits, patients, by = "subject_id")
 ```
 
 ```{r, cache = T}
@@ -464,7 +464,7 @@ We can see a noticeable block of admissions at age 0 (probably newborns who must
 
 ---
 
-# Question 3
+# Question 3 - Demographics of ICU Admits
 
 ## Load data, rename columns
 
@@ -472,11 +472,7 @@ We can see a noticeable block of admissions at age 0 (probably newborns who must
 icu = read_csv("/home/203bdata/mimic-iii/ICUSTAYS.csv")
 
 names(icu) = tolower(names(icu))
-
-icu = icu %>% rename(sub_id = subject_id)
 ```
-I also rename `subject_id` to `sub_id` to match variable names with `admissions`.
-
 
 ## Length of ICU Stay
 
@@ -509,7 +505,7 @@ Most ICU admissions were in the MICU (Medical ICU for adults).
 ### Merge ICU stay data and Patients data
 
 ```{r, cache = T}
-icu_pts = left_join(icu, patients, by = "sub_id")
+icu_pts = left_join(icu, patients, by = "subject_id")
 ```
 
 ## Gender
@@ -532,6 +528,8 @@ Like in the admitted patients, around 45% of ICU admits are women.
 ```{r}
 icu_admit_pts = left_join(icu, admit_pts, by = "hadm_id")
 ```
+
+
 
 ### Place multiple plots on grid by First ICU Unit
 
@@ -602,4 +600,110 @@ grid.arrange(
 )
 ```
 
-NICU admits are* excluded from this visualization of age as all NICU admits are age 0 (as the NICU is the **Neonatal** ICU). To display ages of patients aged 89 and older, I followed the same procedure previously described when examining the admitted patients. For the remaining plots, we can see that overall, ICU admit count increases with age. Most interesting is the high frequency of admits in the TSICU (**Trauma Surgical** ICU) in patients aged 20-30; this is likely due to an increased occurence of motor vehicle accidents among this age group.
+NICU admits are excluded from this visualization of age as all NICU admits are age 0 (as the NICU is the **Neonatal** ICU). To display ages of patients aged 89 and older, I followed the same procedure previously described when examining the admitted patients. For the remaining plots, we can see that overall, ICU admit count increases with age. Most interesting is the high frequency of admits in the TSICU (**Trauma Surgical** ICU) in patients aged 20-30; this is likely due to an increased occurence of motor vehicle accidents among this age group.
+
+# Question 4 - Compiling Measurements with Patient Stay Data
+
+*Compile a tibble that contains the first ICU stay of unique patients, with the patient’s demographic information, the first systolic blood pressure measurement during ICU stay, and whether the patient died within 30 days of hospitcal admission.*
+
+## Import data and rename columns
+
+```{r}
+chart_events = read_csv("/home/203bdata/mimic-iii/CHARTEVENTS.csv")
+
+names(chart_events) = tolower(names(chart_events))
+
+d_items = read_csv("/home/203bdata/mimic-iii/D_ITEMS.csv", col_types = "ddcccccccc")
+
+names(d_items) = tolower(names(d_items))
+```
+
+The string `""ddcccccccc"` is shorthand for data types where `d` is `dbl` and `c` is `chr`.
+
+## Obtain Item IDs for Systolic BP
+
+```{r}
+chart_labeled = left_join(chart_events, d_items, by = "itemid")
+
+chart_labeled %>% 
+  filter(str_detect(label, regex('systolic', ignore_case = T))) %>% 
+  select(itemid, label) %$% 
+  table(itemid, label)
+```
+
+We merge `chart_events` with the item dictionary `d_items` by itemid to form the combined dataset `chart_labeled`. We then search the `label` column for any case of "systolic" and return a table of appropriate item IDs and their corresponding label.
+
+From the table, we will use itemids 220050, 220059, 220179, 224167, 225309, 227243 to find systolic BP measures.
+
+## Build Final Tibble
+
+```{r}
+final_a = chart_labeled %>% 
+          filter(itemid %in% c(220050, 220059, 220179, 224167, 225309, 227243)) %>% 
+          group_by(subject_id) %>%
+          top_n(n = 1, wt = desc(charttime)) %>% filter(n() == 1) %>% 
+          select(subject_id, hadm_id, icustay_id, value, valuenum, valueuom) %>% arrange(subject_id) 
+```
+
+Here, we find all mentions of the `itemID`s we found previously, then group by `subject_id` and find the first chart time for each subject ID. Afterwards, we select the relevant columns we need from `chart_labeled` for the final tibble.
+
+icu_admit_pts %>% select(contains('subject_id'))
+
+```{r}
+final_b = icu_admit_pts %>% select(-subject_id.y) %>% 
+          rename(subject_id = subject_id.x) %>%
+          select(subject_id, hadm_id, first_careunit, admit_time, death_time, 
+          admit_type, admit_location, insurance, language, religion, mar_stat, 
+          ethnicity) %>% arrange(subject_id)
+```
+
+We select demographic info for patients to be merged with `final_a` created before.
+
+## Join datasets
+
+```{r}
+final_c = right_join(final_a, final_b, by = "hadm_id", "subject_id") %>% 
+          filter(!is.na(value)) 
+```
+
+We merge the charted events with labels with the demographic data by `hadm_id` and `subject_id` and drop all patients with no report of systolic BP. I chose to drop patients with no measurement for presentation purposes, but it could be interesting to explore differences between those with systolic BP measurements and those without. 
+
+## Create variable to check if patient died within 30 days of admission
+
+```{r}
+final = final_c %>% 
+        mutate(died_within_30 = 
+               case_when(is.na(death_time) ~ F, 
+               as.numeric(death_time - admit_time, "days") < 30 ~ T))
+
+final_selected = final %>% select(subject_id.x, hadm_id, icustay_id, valuenum, 
+                 valueuom, first_careunit, admit_time:died_within_30) %>% 
+                 rename(subject_id = subject_id.x)
+
+final_selected
+```
+
+It is interesting that only 453 patients had systolic BP measurements - it seems that the `chartevents` selection is only a random sample of chart events from patients in the dataset.
+
+## Visualize systolic BP measurements and deaths within 30 days of admission
+
+```{r, cache = T}
+final_selected %>%
+  ggplot() +
+  geom_histogram(aes(valuenum), fill = "navy", binwidth = 5) +
+  xlab("Systolic BP, mmHg") +
+  ylab("Count") +
+  ggtitle("First Systolic BP Measured for Selected ICU Patients")
+```
+
+The distribution of first systolic BP measurement appears somewhat normal; however there are some people with serious issues with blood pressure (i.e. those with BP < 50 or BP > 180).
+
+```{r, cache = T}
+final_selected %>% 
+  ggplot() +
+  geom_bar(aes(died_within_30, y = ..prop.., group = 1), 
+           fill = "navy") +
+  xlab("Died within 30 days of admission") +
+  ylab("Proportion") +
+  ggtitle("Death Status of Patients in First ICU Stay")
+```

@@ -52,31 +52,35 @@ We import the most recent data as follows:
 
 ## Data Cleaning
 
-The data is imported in wide format (as it is longitudinal). I will use Dr. Zhou's framework to convert the imported CSVs into long format:
+The data is imported as longitudinal/time-series data. I will use Dr. Zhou's framework to convert the imported CSVs into long format:
 
 ```{r}
 confirmed = confirmed_raw %>%
   pivot_longer(-(`Province/State`:Long), 
-               names_to = "time", 
+               names_to = "date", 
                values_to = "confirmed") %>%
-  mutate(time = (mdy_hm(time))) # convert string to date-time
+  mutate(date = mdy(date)) # convert string to date-time
 
 confirmed
 ```
+
+
+
 ```{r}
 recovered <- recovered_raw %>%
   pivot_longer(-(`Province/State`:Long), 
-               names_to = "time", 
+               names_to = "date", 
                values_to = "recovered") %>%
-  mutate(time = mdy_hm(time))
+  mutate(date = mdy(date))
+
 recovered
 ```
 ```{r}
 death <- death_raw %>%
   pivot_longer(-(`Province/State`:Long), 
-               names_to = "time", 
+               names_to = "date", 
                values_to = "death") %>%
-  mutate(time = mdy_hm(time))
+  mutate(date = mdy(date))
 death
 ```
 
@@ -87,8 +91,11 @@ covid <- confirmed %>%
 covid %>% print(width = Inf)
 ```
 
-covid
+```{r}
+covid %>% filter(`Province/State` == 'Anhui') %>% ggplot() + geom_col(aes(date, confirmed))
+```
 
+We can get province-level incidence curves from this data.
 
 ## Other data sources
 
@@ -96,44 +103,44 @@ Other sources of data:
 - Tencent (in Chinese): <https://news.qq.com/zt2020/page/feiyan.htm>  
 - R package `nCov2019`; install by `remotes::install_github("GuangchuangYu/nCov2019")`  
 
+## Explore nCov2019 Data
+
+This data is from Chinese social media. While it should be mostly similar to the JHU data, we will keep it as an additional pane for comparison's sake over the course of the outbreak.
+
+```{r}
+library(nCov2019)
+
+hist = load_nCov2019(lang = "en")
+head(summary(hist, ))
+```
+
+The `nCov2019` data has province-level incidence data by day (like the JHU data).
+ 
+```{r}
+
+ggplot(summary(hist, 'Hubei'), mapping = aes(time, as.numeric(cum_confirm))) +
+  geom_col()
+```
+
+Looks like we can get province-level incidence plots from this as well.
+
 ## Mapping China provinces
 
-Some useful resources for mapping:  
-- The book [_Geocomputation with R_](https://geocompr.robinlovelace.net). Especially [Chapter 8 Making Maps with R](https://geocompr.robinlovelace.net/adv-map.html).  
-- The book [_An Introduction to Spatial Analysis and Mapping in R_](https://bookdown.org/lexcomber/brunsdoncomber2e/). 
+`nCov2019` comes with a mapping module included (but only works with the up-to-date data).
 
-### Use mapdata - **MAP IS TOO OLD**
+remotes::install_github("GuangchuangYu/chinamap")
 
-The package `mapdata` contains a data `china`. But the map seems out-dated. For example, Chongqing is sill a part of Sichuan province in this map.
 ```{r}
-suppressMessages(library(mapdata))
-map("china", col = "gray40", ylim = c(18,54))
+current = get_nCov2019(lang = "en")
+require(chinamap)
+
+cn = get_map_china()
+cn$province = trans_province(cn$province)
+
+plot(current, region = 'china', chinamap = cn, font.size = 2)
 ```
 
-### Use GADM data - **THIS IS VERY SLOW**
-
-Download GADM data for China at <https://www.gadm.org/download_country_v3.html>. There are 4 levels of details to plot. We opt for the level 1 which is at the province level.
-```{r, eval = FALSE}
-library(sf)
-library(tidyverse)
-gadm36_CHN_1_sf <- readRDS("gadm36_CHN_0_sf.rds")
-ggplot(data = gadm36_CHN_1_sf) + 
-  geom_sf()
-```
-
-```{r, eval = FALSE}
-library("GADMTools")
-map <- gadm_sp_loadCountries("CHN", level = 1, basefile = "./")
-gadm_plot(map) + theme_light()
-```
-
-### Use shapefile from GADM - **THIS IS VERY SLOW**
-
-```{r, eval = FALSE}
-library(maptools)
-map <- rgdal::readOGR("gadm36_CHN_shp/gadm36_CHN_1.shp")
-plot(map)
-```
+Will need to see if this is interactive.
 
 ### Use GIS data from China
 

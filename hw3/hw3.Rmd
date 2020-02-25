@@ -140,25 +140,26 @@ cn$province = trans_province(cn$province)
 plot(current, region = 'china', chinamap = cn, font.size = 2)
 ```
 
-Will need to see if this is interactive.
+Will need to see if this can be modified to be interactive in Shiny.
 
-### Use GIS data from China
+## Use GIS data from China
 
 Donwload China GIS data from [here](https://uploads.cosx.org/2009/07/chinaprovinceborderdata_tar_gz.zip), unzip, and put in the working directory.
-```{bash}
-ls -l bou2_4p.*
-```
+
 Read in the shape file into simple feature (SF) format. Replace the `NA` in `NAME` by Macau.
+
 ```{r}
 library(sf)
-chn_map <- st_read("./bou2_4p.shp", as_tibble = TRUE) %>%
+
+chn_map = st_read("~/biostat-203b-2020-winter/bou2_4p.shp", as_tibble = TRUE) %>%
   mutate(NAME = iconv(NAME, from = "GBK"),
          BOU2_4M_ = as.integer(BOU2_4M_),
          BOU2_4M_ID = as.integer(BOU2_4M_ID)) %>%
   mutate(NAME = str_replace_na(NAME, replacement = "澳门特别行政区"))
-class(chn_map)
+
 chn_map
 ```
+
 There are about 34 provinces in China, why there are 925 areas?
 ```{r}
 chn_map %>% 
@@ -166,8 +167,8 @@ chn_map %>%
   print(n = Inf)
 ```
 
-
 `ggplot2` can plot SF data using `geom_sf` function:
+
 ```{r}
 chn_map %>%
   ggplot() + 
@@ -176,13 +177,15 @@ chn_map %>%
   theme_bw() # better for maps 
 ```
 These are the provinces available from the JHU sheets.
+
 ```{r}
-ncov_tbl %>%
+covid %>%
   filter(`Country/Region` %in% c("Mainland China", "Macau", "Hong Kong", "Taiwan")) %>%
   distinct(`Province/State`, `Country/Region`) %>%
   print(n = Inf)
 ```
-In order to join the tibbles `ncov_tbl` and `chn_map`, we need to use the province name as key. Let's create a function to translate Chinese province name to English.
+
+Use Dr. Zhou's function to convert Chinese province names to English:
 ```{r}
 translate <- function(x) {
   sapply(x, function(chn_name) {
@@ -274,45 +277,44 @@ chn_prov %>% print(n = Inf)
 ## Plotting 2019-nCoV incidence
 
 Try to join the virus data `ncov_tbl` and map data `chn_prov`.
-```{r}
-# for exploration
-plotdate <- "2020-02-13"
-ncov_tbl %>%
-  filter(`Country/Region` %in% c("Mainland China", "Macau", "Hong Kong", "Taiwan")) %>%
-  mutate(date = date(time)) %>%
-  filter(date == plotdate) %>%
-  group_by(`Province/State`) %>%  
-  top_n(1, time) %>%
-  right_join(chn_prov, by = c("Province/State" = "NAME_ENG")) # join map and virus data
-```
 
-Plot confirmed cases on a specific date:
-```{r}
-library(wesanderson)
+covid
+chn_prov
 
+covid %>% filter(`Country/Region` %in% c("Mainland China", "Macau", "Hong Kong", "Taiwan")) %>% right_join(chn_prov, by = c("Province/State" = "NAME_ENG"))
+
+
+Plot confirmed cases on a specific date
+```{r}
 plotdate <- "2020-02-13"
 count <- "confirmed"
 
-ncov_tbl %>%
+covid %>%
   filter(`Country/Region` %in% c("Mainland China", "Macau", "Hong Kong", "Taiwan")) %>%
-  filter(date(time) == plotdate) %>%
-  group_by(`Province/State`) %>%  
-  top_n(1, time) %>% # take the latest count on that date
+  filter(date == plotdate) %>%
+  group_by(`Province/State`) %>%
+  top_n(1, date) %>% # take the latest count on that date
   right_join(chn_prov, by = c("Province/State" = "NAME_ENG")) %>%
-  ggplot() + 
+  ggplot() +
   geom_sf(mapping = aes(fill = !!sym(count), geometry = geometry)) +
-  # scale_fill_gradient(low = "white",
-  #                     high = "red",
-  #                     trans = "log10",
-  #                     limits = c(1, 50000),
-  #                     breaks = c(1, 10, 100, 1000, 10000),
-  #                     name = "") +
   scale_fill_gradientn(colors = wes_palette("Zissou1", 100, type = "continuous"),
-                       trans = "log10") + # can we find a better palette
-  #scale_fill_brewer(palette = "Dark2") + 
+                       trans = "log10") + # can we find a better palett
   theme_bw() +
   labs(title = str_c(count, " cases"), subtitle = plotdate)
 ```
+
+covid %>%
+  filter(`Country/Region` %in% c("Mainland China", "Macau", "Hong Kong", "Taiwan")) %>%
+  filter(date == plotdate) %>%
+  group_by(`Province/State`) %>%
+  top_n(1, date) %>% # take the latest count on that date
+  right_join(chn_prov, by = c("Province/State" = "NAME_ENG")) %>%
+  ggplot() +
+  geom_sf(mapping = aes(fill = !!sym(count), geometry = geometry)) +
+  scale_fill_gradientn(colors = wes_palette("Zissou1", 100, type = "continuous"),
+                       trans = "log10") + # can we find a better palett
+  theme_bw() +
+  labs(title = str_c(count, " cases"), subtitle = plotdate)
 
 To plot the line graph of confirmed cases over time:
 ```{r}
@@ -362,20 +364,4 @@ Make animation and save as gif (this takes long, a couple minutes)
 anim_save("confirmed_anim.gif")
 ```
 
-## Impact on economy
 
-```{r}
-library(quantmod)
-stock <- getSymbols("^HSI", # S&P 500 (^GSPC), Dow Jones (^DJI), NASDAQ (^IXIC), Russell 2000 (^RUT), FTSE 100 (^FTSE), Nikkei 225 (^N225), HANG SENG INDEX (^HSI)
-                    src = "yahoo", 
-                    auto.assign = FALSE, 
-                    from = min(ncov_tbl$time),
-                    to = max(ncov_tbl$time)) %>% as_tibble(rownames = NA)
-stock
-chartSeries(stock, theme = chartTheme("white"),
-           type = "line", log.scale = FALSE, TA = NULL)
-```
-
-## Mapping countries
-
-TODO

@@ -1,6 +1,6 @@
 ---
 title: "Biostat 203B Homework 3"
-subtitle: EDA for Coronavirus Shiny App
+subtitle: "EDA and Mapping"
 author:
 - George Dewey
 output:
@@ -278,14 +278,10 @@ chn_prov %>% print(n = Inf)
 
 Try to join the virus data `ncov_tbl` and map data `chn_prov`.
 
-covid
-chn_prov
-
-covid %>% filter(`Country/Region` %in% c("Mainland China", "Macau", "Hong Kong", "Taiwan")) %>% right_join(chn_prov, by = c("Province/State" = "NAME_ENG"))
-
-
 Plot confirmed cases on a specific date
 ```{r}
+library(wesanderson)
+
 plotdate <- "2020-02-13"
 count <- "confirmed"
 
@@ -303,23 +299,6 @@ covid %>%
   labs(title = str_c(count, " cases"), subtitle = plotdate)
 ```
 
-covid %>%
-  filter(`Country/Region` %in% c("Mainland China", "Macau", "Hong Kong", "Taiwan")) %>%
-  filter(date == plotdate) %>%
-  group_by(`Province/State`) %>%
-  top_n(1, date) %>% # take the latest count on that date
-  right_join(chn_prov, by = c("Province/State" = "NAME_ENG")) %>%
-  ggplot() +
-  geom_sf(mapping = aes(fill = !!sym(count), geometry = geometry)) +
-  scale_fill_gradientn(colors = wes_palette("Zissou1", 100, type = "continuous"),
-                       trans = "log10") + # can we find a better palett
-  theme_bw() +
-  labs(title = str_c(count, " cases"), subtitle = plotdate)
-
-To plot the line graph of confirmed cases over time:
-```{r}
-# TODO
-```
 
 ## Animation
 
@@ -328,7 +307,7 @@ Resources about making animations in R:
 - Section 8.3 of [Geomcomputation with R](https://geocompr.robinlovelace.net/adv-map.html#animated-maps). 
 
 ```{r}
-ncov_tbl %>%
+covid %>%
   filter(`Country/Region` %in% c("Mainland China", "Macau", "Hong Kong", "Taiwan")) %>%
 #  group_by(`Province/State`) %>%  
   right_join(chn_prov, by = c("Province/State" = "NAME_ENG")) %>%
@@ -340,7 +319,7 @@ Plot the date at all time points (this takes long, a couple minutes):
 library(gganimate)
 library(transformr)
 
-(p <- ncov_tbl %>%
+(p <- covid %>%
   filter(`Country/Region` %in% c("Mainland China", "Macau", "Hong Kong", "Taiwan")) %>%
   right_join(chn_prov, by = c("Province/State" = "NAME_ENG")) %>%
   ggplot() + 
@@ -356,12 +335,13 @@ library(transformr)
   theme_bw() +
   labs(title = "Confirmed Cases"))
 ```
-Make animation and save as gif (this takes long, a couple minutes)
+
+<!-- Make animation and save as gif (this takes long, a couple minutes) -->
 ```{r}
-(anim <- p + 
-  transition_time(time) + 
-  labs(title = "Confirmed Cases", subtitle = "Date: {frame_time}"))
-anim_save("confirmed_anim.gif")
+# (anim <- p + 
+#   transition_time(time) + 
+#   labs(title = "Confirmed Cases", subtitle = "Date: {frame_time}"))
+# anim_save("confirmed_anim.gif")
 ```
 
 

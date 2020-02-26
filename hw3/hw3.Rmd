@@ -1,6 +1,10 @@
----
+-s-- <<<<<<< HEAD
 title: "Biostat 203B Homework 3"
 subtitle: "EDA and Mapping"
+=======
+title: "Biostat 203B Homework 3 - Mapping"
+subtitle: "EDA for Coronavirus Shiny App"
+>>>>>>> dabb539b67251279ec2c7d68edc7ee1cce1c16ff
 author:
 - George Dewey
 output:
@@ -61,10 +65,8 @@ confirmed = confirmed_raw %>%
                values_to = "confirmed") %>%
   mutate(date = mdy(date)) # convert string to date-time
 
-confirmed
+
 ```
-
-
 
 ```{r}
 recovered <- recovered_raw %>%

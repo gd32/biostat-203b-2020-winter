@@ -1,0 +1,48 @@
+---
+title: "Biostat 203B Homework 3 - Reddit Scraping"
+subtitle: "Collecting historical Reddit posts about Coronavirus"
+author: "George Dewey"
+date: "2/25/2020"
+output: html_document
+---
+
+This document demonstrates data collection of Reddit posts about the 2020 Covid Outbreak.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library("reticulate")
+use_python('C:/Users/George/Anaconda3/python.exe')
+clientid = Sys.getenv("client_id")
+clientsec = Sys.getenv("client_secret")
+```
+
+Goal: collect the top 50
+
+
+```{python}
+import pandas as pd
+import praw
+from psaw import PushshiftAPI
+import datetime as dt
+
+# 
+api = PushshiftAPI()
+
+# Choose start date as start of outbreak - virus data started 01/22/2020 
+start_time = int(dt.datetime(2020, 1, 22).timestamp())
+
+# Grab threads
+threads = list(api.search_submissions(q = 'coronavirus',
+                                      after = start_time,
+                                      subreddit = 'science',
+                                      filter = ["author", "url", "title"], 
+                                      limit = 5))
+                                      
+threads
+```
+
+```{r}
+library(lubridate)
+as_datetime(1579731665, tz = "UTC")
+```

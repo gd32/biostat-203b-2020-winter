@@ -97,6 +97,10 @@ covid %>% print(width = Inf)
 covid %>% filter(`Province/State` == 'Anhui') %>% ggplot() + geom_col(aes(date, confirmed))
 ```
 
+```{r}
+write_csv(covid, "covid.csv")
+```
+
 We can get province-level incidence curves from this data.
 
 ## Other data sources
@@ -270,10 +274,14 @@ translate <- function(x) {
 ```
 Create a new variable `NAME_ENG`:
 ```{r}
-chn_prov <- chn_map %>% 
+chn_prov = chn_map %>% 
   count(NAME) %>%
   mutate(NAME_ENG = translate(NAME)) # translate function is vectorized
 chn_prov %>% print(n = Inf)
+```
+
+```{r}
+write_csv(chn_prov, "provs.csv")
 ```
 
 ## Plotting 2019-nCoV incidence
@@ -282,9 +290,7 @@ Try to join the virus data `ncov_tbl` and map data `chn_prov`.
 
 Plot confirmed cases on a specific date
 ```{r}
-library(wesanderson)
-
-plotdate <- "2020-02-13"
+plotdate <- "2020-01-31"
 count <- "confirmed"
 
 covid %>%
@@ -295,55 +301,14 @@ covid %>%
   right_join(chn_prov, by = c("Province/State" = "NAME_ENG")) %>%
   ggplot() +
   geom_sf(mapping = aes(fill = !!sym(count), geometry = geometry)) +
-  scale_fill_gradientn(colors = wes_palette("Zissou1", 100, type = "continuous"),
-                       trans = "log10") + # can we find a better palett
+  scale_fill_gradient(name = "Cases", 
+                      trans = "log10", 
+                      breaks = c(5, 50, 500, 5000, 50000, 100000),
+                      labels = c(5, 50, 500, 5000, 50000, 100000),
+                      guide = "legend",
+                      low = "lightblue",
+                      high = "red") +
   theme_bw() +
   labs(title = str_c(count, " cases"), subtitle = plotdate)
 ```
-
-
-## Animation
-
-Resources about making animations in R:  
-- [gganimate](https://gganimate.com/index.html) package.  
-- Section 8.3 of [Geomcomputation with R](https://geocompr.robinlovelace.net/adv-map.html#animated-maps). 
-
-```{r}
-covid %>%
-  filter(`Country/Region` %in% c("Mainland China", "Macau", "Hong Kong", "Taiwan")) %>%
-#  group_by(`Province/State`) %>%  
-  right_join(chn_prov, by = c("Province/State" = "NAME_ENG")) %>%
-  print()
-```
-
-Plot the date at all time points (this takes long, a couple minutes):
-```{r}
-library(gganimate)
-library(transformr)
-
-(p <- covid %>%
-  filter(`Country/Region` %in% c("Mainland China", "Macau", "Hong Kong", "Taiwan")) %>%
-  right_join(chn_prov, by = c("Province/State" = "NAME_ENG")) %>%
-  ggplot() + 
-  geom_sf(mapping = aes(fill = !!sym(count), geometry = geometry)) + 
-  # scale_fill_gradient(low = "white",
-  #                     high = "red",
-  #                     trans = "log10",
-  #                     limits = c(1, 100000),
-  #                     breaks = c(1, 10, 100, 1000, 10000),
-  #                     name = "") +
-  scale_fill_gradientn(colours = wes_palette("Zissou1", 100, type = "continuous"),
-                       trans = "log10") + 
-  theme_bw() +
-  labs(title = "Confirmed Cases"))
-```
-
-<!-- Make animation and save as gif (this takes long, a couple minutes) -->
-```{r}
-# (anim <- p + 
-#   transition_time(time) + 
-#   labs(title = "Confirmed Cases", subtitle = "Date: {frame_time}"))
-# anim_save("confirmed_anim.gif")
-```
-
 

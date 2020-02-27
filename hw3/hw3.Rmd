@@ -97,6 +97,10 @@ covid %>% print(width = Inf)
 covid %>% filter(`Province/State` == 'Anhui') %>% ggplot() + geom_col(aes(date, confirmed))
 ```
 
+```{r}
+write_csv(covid, "covid.csv")
+```
+
 We can get province-level incidence curves from this data.
 
 ## Other data sources
@@ -270,10 +274,14 @@ translate <- function(x) {
 ```
 Create a new variable `NAME_ENG`:
 ```{r}
-chn_prov <- chn_map %>% 
+chn_prov = chn_map %>% 
   count(NAME) %>%
   mutate(NAME_ENG = translate(NAME)) # translate function is vectorized
 chn_prov %>% print(n = Inf)
+```
+
+```{r}
+write_csv(chn_prov, "provs.csv")
 ```
 
 ## Plotting 2019-nCoV incidence
@@ -282,9 +290,8 @@ Try to join the virus data `ncov_tbl` and map data `chn_prov`.
 
 Plot confirmed cases on a specific date
 ```{r}
-library(wesanderson)
 
-plotdate <- "2020-02-13"
+plotdate <- "2020-01-31"
 count <- "confirmed"
 
 covid %>%
@@ -295,8 +302,15 @@ covid %>%
   right_join(chn_prov, by = c("Province/State" = "NAME_ENG")) %>%
   ggplot() +
   geom_sf(mapping = aes(fill = !!sym(count), geometry = geometry)) +
-  scale_fill_gradientn(colors = wes_palette("Zissou1", 100, type = "continuous"),
-                       trans = "log10") + # can we find a better palett
+  scale_fill_gradient(low = "lightblue", high = "red") +
+  # scale_fill_gradientn(name = "Confirmed Cases", 
+  #                      trans = "log10",
+  #                      low = "blue",
+  #                      high = "red",
+  #                      breaks = c(1, 100, 1000, 5000)) +
+  
+  # scale_fill_gradientn(colors = wes_palette("Zissou1", 100, type = "continuous"),
+  #                      trans = "log10")+
   theme_bw() +
   labs(title = str_c(count, " cases"), subtitle = plotdate)
 ```

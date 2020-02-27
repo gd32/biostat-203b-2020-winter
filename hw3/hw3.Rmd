@@ -290,16 +290,11 @@ Try to join the virus data `ncov_tbl` and map data `chn_prov`.
 
 Plot confirmed cases on a specific date
 ```{r}
-<<<<<<< HEAD
-plotdate <- "2020-01-31"
-||||||| merged common ancestors
+
 library(wesanderson)
 
-plotdate <- "2020-02-13"
-=======
+plotdate = "2020-01-31"
 
-plotdate <- "2020-01-31"
->>>>>>> 270bc5531b637db9e33b287330b94da0225ea891
 count <- "confirmed"
 
 covid %>%
@@ -310,7 +305,6 @@ covid %>%
   right_join(chn_prov, by = c("Province/State" = "NAME_ENG")) %>%
   ggplot() +
   geom_sf(mapping = aes(fill = !!sym(count), geometry = geometry)) +
-<<<<<<< HEAD
   scale_fill_gradient(name = "Cases", 
                       trans = "log10", 
                       breaks = c(5, 50, 500, 5000, 50000, 100000),
@@ -318,20 +312,6 @@ covid %>%
                       guide = "legend",
                       low = "lightblue",
                       high = "red") +
-||||||| merged common ancestors
-  scale_fill_gradientn(colors = wes_palette("Zissou1", 100, type = "continuous"),
-                       trans = "log10") + # can we find a better palett
-=======
-  scale_fill_gradient(low = "lightblue", high = "red") +
-  # scale_fill_gradientn(name = "Confirmed Cases", 
-  #                      trans = "log10",
-  #                      low = "blue",
-  #                      high = "red",
-  #                      breaks = c(1, 100, 1000, 5000)) +
-  
-  # scale_fill_gradientn(colors = wes_palette("Zissou1", 100, type = "continuous"),
-  #                      trans = "log10")+
->>>>>>> 270bc5531b637db9e33b287330b94da0225ea891
   theme_bw() +
   labs(title = str_c(count, " cases"), subtitle = plotdate)
 ```

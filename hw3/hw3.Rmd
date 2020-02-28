@@ -1,8 +1,7 @@
 ---
 title: "Biostat 203B Homework 3 - Mapping"
 subtitle: "EDA for Coronavirus Shiny App"
-author:
-- George Dewey
+author: George Dewey
 output:
     html_document:
     toc: true
@@ -168,7 +167,7 @@ chn_map %>%
   theme_bw() 
 ```
 
-These are the provinces available from the JHU sheets.
+These are the provinces available from the JHU data.
 
 ```{r}
 covid %>%
@@ -269,10 +268,8 @@ chn_prov = chn_map %>%
 chn_prov %>% print(n = Inf)
 ```
 
-## Write province data to file
-
 ```{r}
-write_csv(chn_prov, "provs.csv")
+write_csv(chn_prov, "./covid_map/provs.csv")
 ```
 
 ## Plotting 2019-nCoV incidence

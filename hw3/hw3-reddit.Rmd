@@ -2,11 +2,12 @@
 title: "Biostat 203B Homework 3 - Reddit Scraping"
 subtitle: "Collecting historical Reddit posts about Coronavirus"
 author: "George Dewey"
-date: "2/25/2020"
 output: html_document
 ---
 
-This document demonstrates data collection of Reddit posts about the COVID-19 Outbreak.
+This document demonstrates data collection of Reddit posts about the COVID-19 Outbreak. We collect the top 50 posts by date from 3 subreddits: `news`, `science`, and `coronavirus`. These 3 communities will present a consistent distribution of discussion topics regarding the COVID-19 Outbreak. The Shiny app will randomly select 3 posts from each subreddit and display them alongside associated graphs.
+
+**Note: PushShiftAPI has some irregularities regarding submission score - to measure post activity I chose the top posts by number of comments.**
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -16,10 +17,6 @@ use_python('C:/Users/George/Anaconda3/python.exe')
 clientid = Sys.getenv("client_id")
 clientsec = Sys.getenv("client_secret")
 ```
-
-Goal: collect the top 50 posts by date from 3 subreddits: `news`, `science`, and `coronavirus`. I believe these 3 communities will present a consistent distribution of discussion topics regarding the COVID-19 Outbreak. The shiny app will randomly select 1 post from each subreddit and display them alongside associated graphs.
-
-Note: PushShiftAPI has some irregularities regarding submission score - to measure post activity I chose the top posts by number of comments.
 
 ## Collect data using Python
 

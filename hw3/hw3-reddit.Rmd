@@ -116,13 +116,16 @@ news = read_csv("news.csv")
 ## Convert UTC datetimes to date to match user input and export
 
 ```{r}
-sci = sci %>% mutate(created_date = as_date(as_datetime(created_utc)))
-corona = corona %>% mutate(created_date = as_date(as_datetime(created_utc)))
-news = news %>% mutate(created_date = as_date(as_datetime(created_utc)))
+sci = sci %>% mutate(created_date = as_date(as_datetime(created_utc))) %>%
+              mutate(sub = "Science")
+corona = corona %>% mutate(created_date = as_date(as_datetime(created_utc))) %>%
+                    mutate(sub = "Coronavirus")
+news = news %>% mutate(created_date = as_date(as_datetime(created_utc))) %>%
+                mutate(sub = "News")
 
-write_csv(sci, "sci_clean.csv")
-write_csv(corona, "corona_clean.csv")
-write_csv(news, "news_clean.csv")
+reddit = bind_rows(sci, corona, news)
+
+write_csv(reddit, "reddit.csv")
 ```
 
 

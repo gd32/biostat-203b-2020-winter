@@ -17,72 +17,48 @@ setwd('/home/gdewey/biostat-203b-2020-winter/hw3')
 
 # Define UI 
 ui = fluidPage(
-
+    
     # Application title
-    titlePanel("Visualizing the 2020 Coronavirus Epidemic"),
+    titlePanel(h1("Visualizing the 2020 Coronavirus Epidemic")),
     
-    # Date input
-    dateInput(inputId = "date", 
-              label = "Date", 
-              value = "2020-02-24",
-              min = "2020-01-22",
-              max = "2020-02-24"),
+    headerPanel(""),
+    headerPanel(""),
     
-    # Case type input
-    selectInput(inputId = "casetype",
-                label = "Case Type",
-                choices = c("Confirmed", "Recovered", "Death")),
+    # Sidebar
+    sidebarPanel(
+        
+        # Date input
+        dateInput(inputId = "date", 
+                  label = "Date", 
+                  value = "2020-02-26",
+                  min = "2020-01-22",
+                  max = "2020-02-26"),
     
-    
-    # Province input (for sideplot)
-    selectInput(inputId = "province",
-                label = "Province",
-                choices = c("Anhui",
-                            "Fujian",
-                            "Gansu",
-                            "Guangdong",
-                            "Guizhou",
-                            "Hainan",
-                            "Hebei",
-                            "Heilongjiang",
-                            "Henan",
-                            "Hubei",
-                            "Hunan",
-                            "Jiangsu",
-                            "Jiangxi",
-                            "Jilin",
-                            "Liaoning",
-                            "Qinghai",
-                            "Shaanxi",
-                            "Shandong",
-                            "Shanxi",
-                            "Sichuan",
-                            "Yunnan",
-                            "Zhejiang",
-                            "Guangxi",
-                            "Inner Mongolia",
-                            "Ningxia",
-                            "Xinjiang",
-                            "Tibet",
-                            "Beijing",
-                            "Chongqing",
-                            "Shanghai",
-                            "Tianjin",
-                            "Hong Kong",
-                            "Macau")),
+        # Case type input
+        selectInput(inputId = "casetype",
+                    label = "Case Type",
+                    choices = c("Confirmed", "Recovered", "Death"))),
     
     # Main output will be incidence map
-    mainPanel(plotOutput("chnmap"))
+    mainPanel(
         
+        tabsetPanel(type = "tabs",
+                    tabPanel("Main", plotOutput("chnmap")),
+                    tabPanel("Bar plot", plotOutput("prov")),
+                    tabPanel("Reddit posts", tableOutput("Reddit")))),
+
 )
 
-# Load data
+# Load virus and map data
 covid = read_csv("covid.csv")
 covid
 
-
 provs = read_csv("provs.csv")
 provs
+
+# Load text data
+reddit = read_csv("reddit.csv")
+reddit
 
 # Define server logic
 server = function(input, output) {
@@ -94,7 +70,8 @@ server = function(input, output) {
     province = reactive({input$province})
 
     output$chnmap = renderPlot({
-        p1 = covid %>%
+        
+        covid %>%
             filter(`Country/Region` %in% c("Mainland China",
                                            "Macau",
                                            "Hong Kong",
@@ -114,18 +91,44 @@ server = function(input, output) {
                                 low = "blue",
                                 high = "orange") +
             theme_bw() +
-            
             labs(title = str_c(outcome(), " Cases"), subtitle = dateInput())
+    }) 
+    
+    output$prov = renderPlot({
         
-        p2 = covid %>% filter(`Province/State` == province()) %>% 
-             ggplot() + 
-             geom_col(aes(date, eval(parse(text = tolower(outcome()))))) +
-             xlab("Date") + 
-             ylab("Count")
-   
-        grid.arrange(p1, p2, nrow=1)}
-        )
- }
+       covid %>% filter(`Country/Region` %in% c("Mainland China", 
+                                                "Macau", 
+                                                "Hong Kong", 
+                                                "Taiwan")) %>% 
+                mutate(isHubei = ifelse(`Province/State` == "Hubei", 
+                                        "Hubei", "Others")) %>%
+                ggplot() + 
+                geom_col(aes(date, eval(parse(text = tolower(outcome()))), 
+                             fill = isHubei)) +
+                labs(fill = "Province") +
+                xlab("Date") +
+                ylab("Count") +
+                scale_fill_manual(values = c("orange", "blue")) +
+                theme_bw()
+    
+        })
+    
+    output$Reddit = renderTable({
+        
+        s1 = reddit %>% filter(sub == "Science", 
+                               created_date == ymd(dateInput())) %>% sample_n(5) 
+        s2 = reddit %>% filter(sub == "News", 
+                               created_date == ymd(dateInput())) %>% sample_n(5)
+        s3 = reddit %>% filter(sub == "Coronavirus", 
+                               created_date == ymd(dateInput())) %>% sample_n(5)
+        
+        display_table = bind_rows(s1, s2, s3)
+        
+        display_table %>% select(c("author", "title", "url", "sub"))
+                     
+       })
+    
+}
 
 # Run the application 
 shinyApp(ui = ui, server = server)

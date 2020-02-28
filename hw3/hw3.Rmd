@@ -1,15 +1,10 @@
--s-- <<<<<<< HEAD
-title: "Biostat 203B Homework 3"
-subtitle: "EDA and Mapping"
-=======
+---
 title: "Biostat 203B Homework 3 - Mapping"
 subtitle: "EDA for Coronavirus Shiny App"
->>>>>>> dabb539b67251279ec2c7d68edc7ee1cce1c16ff
 author:
 - George Dewey
 output:
-  # ioslides_presentation: default
-  html_document:
+    html_document:
     toc: true
     toc_depth: 4
 ---
@@ -65,7 +60,7 @@ confirmed = confirmed_raw %>%
                values_to = "confirmed") %>%
   mutate(date = mdy(date)) # convert string to date-time
 
-
+confirmed
 ```
 
 ```{r}
@@ -77,6 +72,7 @@ recovered <- recovered_raw %>%
 
 recovered
 ```
+
 ```{r}
 death <- death_raw %>%
   pivot_longer(-(`Province/State`:Long), 
@@ -93,8 +89,26 @@ covid <- confirmed %>%
 covid %>% print(width = Inf)
 ```
 
+Find the last day of data collection:
+
 ```{r}
-covid %>% filter(`Province/State` == 'Anhui') %>% ggplot() + geom_col(aes(date, confirmed))
+covid %>% arrange(date) %>% tail()
+```
+
+It appears that the data is being updated daily. We can plot the cumulative number of cases as follows:
+
+```{r}
+covid %>% filter(`Country/Region` %in% c("Mainland China", 
+                                         "Macau", 
+                                         "Hong Kong", 
+                                         "Taiwan")) %>% 
+  mutate(isHubei = ifelse(`Province/State` == "Hubei", "Hubei", "Others")) %>%
+  ggplot() + 
+  geom_col(aes(date, confirmed, fill = isHubei)) +
+  labs(fill = "Province") +
+  xlab("Date") +
+  ylab("Cases") +
+  scale_fill_manual(values = c("orange", "blue"))
 ```
 
 ```{r}

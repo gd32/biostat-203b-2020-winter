@@ -5,7 +5,7 @@ author: "George Dewey"
 output: html_document
 ---
 
-This document demonstrates data collection of Reddit posts about the COVID-19 Outbreak. We collect the top 50 posts by date from 3 subreddits: `news`, `science`, and `coronavirus`. These 3 communities will present a consistent distribution of discussion topics regarding the COVID-19 Outbreak. The Shiny app will randomly select 3 posts from each subreddit and display them alongside associated graphs.
+This document demonstrates data collection of Reddit posts about the COVID-19 Outbreak. We collect the top 50 posts by date from 3 subreddits: `news`, `science`, and `coronavirus`. These 3 communities will present a consistent distribution of discussion topics regarding the COVID-19 Outbreak. The Shiny app will randomly select 5 posts from the 3 subreddits and display them.
 
 **Note: PushShiftAPI has some irregularities regarding submission score - to measure post activity I chose the top posts by number of comments.**
 

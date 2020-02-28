@@ -11,35 +11,14 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
-```
 
-## Task
-
-1. Develop a Shiny app that visualizes the progression of the 2019-20 Global Coronavirus Outbreak. 
-
-2. If you are ambitious, bring in visualization of other types of data, e.g., stock market, tweets, contrast with previous outbreak (e.g., 2003 SARS, 2009 H1N1, 2012 MERS, 2014 Ebola), prediction from your statistical/epidemiological model, and so on. 
-
-3. Publish your Shiny app to <https://www.shinyapps.io> and share the link.
-
-4. (Optinal) Submit your app to the 2020 Shiny Contest (deadline 20 March 2020 at 5pm ET). 
-
-Below is some data exploration, which may help you get started. You do _not_ have to use it. Note below code may change frequently.
-
-<!-- Johns Hopkins CSSE Visualization: <https://gisanddata.maps.arcgis.com/apps/opsdashboard/index.html#/bda7594740fd40299423467b48e9ecf6> -->
-
-<!-- Downloadable Google sheet: -->
-<!-- <https://docs.google.com/spreadsheets/d/1wQVypefm946ch4XDp37uZ-wartW4V7ILdg-qYiDXUHM/edit#gid=787605648> -->
-
-<!-- Time series table: <https://docs.google.com/spreadsheets/d/1UF2pSkFTURko2OvfHWWlFpDFAr1UxCBA4JLwlSP6KFo/edit#gid=0> -->
-
-```{r include=FALSE}
 library(tidyverse)
 library(lubridate)
 ```
 
 ## Import JHU CSSE Data
 
-JHU's CSSE maintains a data repository <https://github.com/CSSEGISandData/COVID-19> tracking all COVID cases of the most recent outbreak. Data is broken down into `Confirmed`, `Deaths`, and `Recovered` cases. 
+JHU's CSSE maintains a data repository <https://github.com/CSSEGISandData/COVID-19> tracking all COVID cases of the most recent outbreak. Data is broken down into `Confirmed`, `Deaths`, and `Recovered` cases and updated daily. 
 
 We import the most recent data as follows:
 
@@ -89,13 +68,7 @@ covid <- confirmed %>%
 covid %>% print(width = Inf)
 ```
 
-Find the last day of data collection:
-
-```{r}
-covid %>% arrange(date) %>% tail()
-```
-
-It appears that the data is being updated daily. We can plot the cumulative number of cases as follows:
+## Plot cumulative Confirmed cases
 
 ```{r}
 covid %>% filter(`Country/Region` %in% c("Mainland China", 
@@ -110,6 +83,8 @@ covid %>% filter(`Country/Region` %in% c("Mainland China",
   ylab("Cases") +
   scale_fill_manual(values = c("orange", "blue"))
 ```
+
+## Write data to file for use in Shiny app
 
 ```{r}
 write_csv(covid, "covid.csv")
@@ -144,11 +119,9 @@ ggplot(summary(hist, 'Hubei'), mapping = aes(time, as.numeric(cum_confirm))) +
 
 Looks like we can get province-level incidence plots from this as well.
 
-## Mapping China provinces
+## Mapping China provinces using `nCov2019`
 
 `nCov2019` comes with a mapping module included (but only works with the up-to-date data).
-
-remotes::install_github("GuangchuangYu/chinamap")
 
 ```{r}
 current = get_nCov2019(lang = "en")
@@ -159,8 +132,6 @@ cn$province = trans_province(cn$province)
 
 plot(current, region = 'china', chinamap = cn, font.size = 2)
 ```
-
-Will need to see if this can be modified to be interactive in Shiny.
 
 ## Use GIS data from China
 
@@ -181,6 +152,7 @@ chn_map
 ```
 
 There are about 34 provinces in China, why there are 925 areas?
+
 ```{r}
 chn_map %>% 
   count(NAME) %>% 
@@ -193,9 +165,9 @@ chn_map %>%
 chn_map %>%
   ggplot() + 
   geom_sf(mapping = aes(geometry = geometry), color = "black", fill = "white") + 
-  #geom_sf_label(mapping = aes(label = NAME)) + 
-  theme_bw() # better for maps 
+  theme_bw() 
 ```
+
 These are the provinces available from the JHU sheets.
 
 ```{r}
@@ -205,7 +177,8 @@ covid %>%
   print(n = Inf)
 ```
 
-Use Dr. Zhou's function to convert Chinese province names to English:
+Use Dr. Zhou's function to convert Chinese province names to English
+
 ```{r}
 translate <- function(x) {
   sapply(x, function(chn_name) {
@@ -286,7 +259,9 @@ translate <- function(x) {
   })
 }
 ```
-Create a new variable `NAME_ENG`:
+
+## Create a new variable `NAME_ENG` converting Chinese placenames to English
+
 ```{r}
 chn_prov = chn_map %>% 
   count(NAME) %>%
@@ -294,19 +269,17 @@ chn_prov = chn_map %>%
 chn_prov %>% print(n = Inf)
 ```
 
+## Write province data to file
+
 ```{r}
 write_csv(chn_prov, "provs.csv")
 ```
 
 ## Plotting 2019-nCoV incidence
 
-Try to join the virus data `ncov_tbl` and map data `chn_prov`.
-
 Plot confirmed cases on a specific date
+
 ```{r}
-
-library(wesanderson)
-
 plotdate = "2020-01-31"
 
 count <- "confirmed"

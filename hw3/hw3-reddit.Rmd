@@ -17,9 +17,11 @@ clientid = Sys.getenv("client_id")
 clientsec = Sys.getenv("client_secret")
 ```
 
-Goal: collect the top 50 posts by date from 3 subreddits: `news`, `science`, and `coronavirus`. I believe these 3 communities will present a consistent distribution of discussion topics regarding the COVID-19 Outbreak. The shiny app will randomly select 2 posts from each subreddit and display them alongside associated graphs.
+Goal: collect the top 50 posts by date from 3 subreddits: `news`, `science`, and `coronavirus`. I believe these 3 communities will present a consistent distribution of discussion topics regarding the COVID-19 Outbreak. The shiny app will randomly select 1 post from each subreddit and display them alongside associated graphs.
 
 Note: PushShiftAPI has some irregularities regarding submission score - to measure post activity I chose the top posts by number of comments.
+
+## Collect data using Python
 
 ```{python, eval=FALSE}
 import pandas as pd
@@ -71,6 +73,7 @@ for i in range(0, 36):
                                           limit = 50)))
 
 # Stack comments by subreddit into single dataframe and convert to csv
+
 sci_df = pd.DataFrame(tl_sci[0])
 
 for i in range(1, len(tl_sci)):
@@ -99,7 +102,9 @@ news_df = news_df.drop(columns = ['created', 'd_'])
 news_df.to_csv('news.csv', index=False)
 ```
 
-```{r}
+---
+
+```{r, include = F}
 library(tidyverse)
 library(lubridate)
 
@@ -108,4 +113,18 @@ corona = read_csv("corona.csv")
 news = read_csv("news.csv")
 ```
 
-news
+## Convert UTC datetimes to date to match user input and export
+
+```{r}
+sci = sci %>% mutate(created_date = as_date(as_datetime(created_utc)))
+corona = corona %>% mutate(created_date = as_date(as_datetime(created_utc)))
+news = news %>% mutate(created_date = as_date(as_datetime(created_utc)))
+
+write_csv(sci, "sci_clean.csv")
+write_csv(corona, "corona_clean.csv")
+write_csv(news, "news_clean.csv")
+```
+
+
+
+

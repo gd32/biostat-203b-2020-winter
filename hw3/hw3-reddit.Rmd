@@ -1,0 +1,130 @@
+---
+title: "Biostat 203B Homework 3 - Reddit Scraping"
+subtitle: "Collecting historical Reddit posts about Coronavirus"
+author: "George Dewey"
+output: html_document
+---
+
+This document demonstrates data collection of Reddit posts about the COVID-19 Outbreak. We collect the top 50 posts by date from 3 subreddits: `news`, `science`, and `coronavirus`. These 3 communities will present a consistent distribution of discussion topics regarding the COVID-19 Outbreak. The Shiny app will randomly select 5 posts from the 3 subreddits and display them.
+
+**Note: PushShiftAPI has some irregularities regarding submission score - to measure post activity I chose the top posts by number of comments.**
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library("reticulate")
+use_python('C:/Users/George/Anaconda3/python.exe')
+clientid = Sys.getenv("client_id")
+clientsec = Sys.getenv("client_secret")
+```
+
+## Collect data using Python
+
+```{python, eval=FALSE}
+import pandas as pd
+import praw
+from psaw import PushshiftAPI
+import datetime as dt
+
+api = PushshiftAPI()
+
+# Choose start date as start of outbreak - virus data started 01/22/2020 
+start_time = int(dt.datetime(2020, 1, 22).timestamp())
+
+days_list = [start_time + i*60*60*24 for i in list(range(1, 37))]
+
+# Grab threads from each of the three subreddits
+tl_news = []
+for i in range(0, 36):
+    start_time = days_list[i]
+    tl_news.append(list(api.search_submissions(q = 'coronavirus',
+                                          after = start_time,
+                                          before = start_time + 60 * 60 * 24,
+                                          subreddit = 'news',
+                                          filter = ["author", "url", "title"], 
+                                          sort = 'desc',
+                                          sort_type = 'num_comments',
+                                          limit = 50)))
+
+tl_sci = []
+for i in range(0, 36):
+    start_time = days_list[i]
+    tl_sci.append(list(api.search_submissions(q = 'coronavirus',
+                                          after = start_time,
+                                          before = start_time + 60 * 60 * 24,
+                                          subreddit = 'science',
+                                          filter = ["author", "url", "title"], 
+                                          sort = 'desc',
+                                          sort_type = 'num_comments',
+                                          limit = 50)))
+
+tl_corona = []
+for i in range(0, 36):
+    start_time = days_list[i]
+    tl_corona.append(list(api.search_submissions(after = start_time,
+                                          before = start_time + 60 * 60 * 24,
+                                          subreddit = 'coronavirus',
+                                          filter = ["author", "url", "title"], 
+                                          sort = 'desc',
+                                          sort_type = 'num_comments',
+                                          limit = 50)))
+
+# Stack comments by subreddit into single dataframe and convert to csv
+
+sci_df = pd.DataFrame(tl_sci[0])
+
+for i in range(1, len(tl_sci)):
+   sci_df = sci_df.append(pd.DataFrame(tl_sci[i]))
+
+sci_df = sci_df.drop(columns = ['created', 'd_'])
+
+sci_df.to_csv('sci.csv', index=False)
+
+corona_df = pd.DataFrame(tl_corona[0])
+
+for i in range(1, len(tl_corona)):
+    corona_df = corona_df.append(pd.DataFrame(tl_corona[i]))
+
+corona_df = corona_df.drop(columns = ['created', 'd_'])
+
+corona_df.to_csv('corona.csv', index=False)
+
+news_df = pd.DataFrame(tl_news[0])
+
+for i in range(1, len(tl_news)):
+    news_df = news_df.append(pd.DataFrame(tl_news[i]))
+
+news_df = news_df.drop(columns = ['created', 'd_'])
+
+news_df.to_csv('news.csv', index=False)
+```
+
+---
+
+```{r, include = F}
+library(tidyverse)
+library(lubridate)
+
+sci = read_csv("sci.csv")
+corona = read_csv("corona.csv")
+news = read_csv("news.csv")
+```
+
+## Convert UTC datetimes to date to match user input and export
+
+```{r}
+sci = sci %>% mutate(created_date = as_date(as_datetime(created_utc))) %>%
+              mutate(sub = "Science")
+corona = corona %>% mutate(created_date = as_date(as_datetime(created_utc))) %>%
+                    mutate(sub = "Coronavirus")
+news = news %>% mutate(created_date = as_date(as_datetime(created_utc))) %>%
+                mutate(sub = "News")
+
+reddit = bind_rows(sci, corona, news)
+
+write_csv(reddit, "reddit.csv")
+```
+
+
+
+

@@ -1,0 +1,302 @@
+---
+title: "Biostat 203B Homework 3 - Mapping"
+subtitle: "EDA for Coronavirus Shiny App"
+author: George Dewey
+output:
+    html_document:
+    toc: true
+    toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+
+library(tidyverse)
+library(lubridate)
+```
+
+## Import JHU CSSE Data
+
+JHU's CSSE maintains a data repository <https://github.com/CSSEGISandData/COVID-19> tracking all COVID cases of the most recent outbreak. Data is broken down into `Confirmed`, `Deaths`, and `Recovered` cases and updated daily. 
+
+We import the most recent data as follows:
+
+```{r}
+(confirmed_raw = read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Confirmed.csv"))
+(recovered_raw = read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Recovered.csv"))
+(death_raw = read_csv("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Deaths.csv"))
+```
+
+## Data Cleaning
+
+The data is imported as longitudinal/time-series data. I will use Dr. Zhou's framework to convert the imported CSVs into long format:
+
+```{r}
+confirmed = confirmed_raw %>%
+  pivot_longer(-(`Province/State`:Long), 
+               names_to = "date", 
+               values_to = "confirmed") %>%
+  mutate(date = mdy(date)) # convert string to date-time
+
+confirmed
+```
+
+```{r}
+recovered <- recovered_raw %>%
+  pivot_longer(-(`Province/State`:Long), 
+               names_to = "date", 
+               values_to = "recovered") %>%
+  mutate(date = mdy(date))
+
+recovered
+```
+
+```{r}
+death <- death_raw %>%
+  pivot_longer(-(`Province/State`:Long), 
+               names_to = "date", 
+               values_to = "death") %>%
+  mutate(date = mdy(date))
+death
+```
+
+```{r}
+covid <- confirmed %>%
+  left_join(recovered) %>%
+  left_join(death)
+covid %>% print(width = Inf)
+```
+
+## Plot cumulative Confirmed cases
+
+```{r}
+covid %>% filter(`Country/Region` %in% c("Mainland China", 
+                                         "Macau", 
+                                         "Hong Kong", 
+                                         "Taiwan")) %>% 
+  mutate(isHubei = ifelse(`Province/State` == "Hubei", "Hubei", "Others")) %>%
+  ggplot() + 
+  geom_col(aes(date, confirmed, fill = isHubei)) +
+  labs(fill = "Province") +
+  xlab("Date") +
+  ylab("Cases") +
+  scale_fill_manual(values = c("orange", "blue"))
+```
+
+## Write data to file for use in Shiny app
+
+```{r}
+write_csv(covid, "covid.csv")
+```
+
+We can get province-level incidence curves from this data.
+
+## Other data sources
+
+Other sources of data:  
+- Tencent (in Chinese): <https://news.qq.com/zt2020/page/feiyan.htm>  
+- R package `nCov2019`; install by `remotes::install_github("GuangchuangYu/nCov2019")`  
+
+## Explore nCov2019 Data
+
+This data is from Chinese social media. While it should be mostly similar to the JHU data, we will keep it as an additional pane for comparison's sake over the course of the outbreak.
+
+```{r}
+library(nCov2019)
+
+hist = load_nCov2019(lang = "en")
+head(summary(hist, ))
+```
+
+The `nCov2019` data has province-level incidence data by day (like the JHU data).
+ 
+```{r}
+
+ggplot(summary(hist, 'Hubei'), mapping = aes(time, as.numeric(cum_confirm))) +
+  geom_col()
+```
+
+Looks like we can get province-level incidence plots from this as well.
+
+## Mapping China provinces using `nCov2019`
+
+`nCov2019` comes with a mapping module included (but only works with the up-to-date data).
+
+```{r}
+current = get_nCov2019(lang = "en")
+require(chinamap)
+
+cn = get_map_china()
+cn$province = trans_province(cn$province)
+
+plot(current, region = 'china', chinamap = cn, font.size = 2)
+```
+
+## Use GIS data from China
+
+Donwload China GIS data from [here](https://uploads.cosx.org/2009/07/chinaprovinceborderdata_tar_gz.zip), unzip, and put in the working directory.
+
+Read in the shape file into simple feature (SF) format. Replace the `NA` in `NAME` by Macau.
+
+```{r}
+library(sf)
+
+chn_map = st_read("~/biostat-203b-2020-winter/bou2_4p.shp", as_tibble = TRUE) %>%
+  mutate(NAME = iconv(NAME, from = "GBK"),
+         BOU2_4M_ = as.integer(BOU2_4M_),
+         BOU2_4M_ID = as.integer(BOU2_4M_ID)) %>%
+  mutate(NAME = str_replace_na(NAME, replacement = "澳门特别行政区"))
+
+chn_map
+```
+
+There are about 34 provinces in China, why there are 925 areas?
+
+```{r}
+chn_map %>% 
+  count(NAME) %>% 
+  print(n = Inf)
+```
+
+`ggplot2` can plot SF data using `geom_sf` function:
+
+```{r}
+chn_map %>%
+  ggplot() + 
+  geom_sf(mapping = aes(geometry = geometry), color = "black", fill = "white") + 
+  theme_bw() 
+```
+
+These are the provinces available from the JHU data.
+
+```{r}
+covid %>%
+  filter(`Country/Region` %in% c("Mainland China", "Macau", "Hong Kong", "Taiwan")) %>%
+  distinct(`Province/State`, `Country/Region`) %>%
+  print(n = Inf)
+```
+
+Use Dr. Zhou's function to convert Chinese province names to English
+
+```{r}
+translate <- function(x) {
+  sapply(x, function(chn_name) {
+    if (str_detect(chn_name, "澳门")) {
+      eng_name <- "Macau"
+    } else if (str_detect(chn_name, "台湾")) {
+      eng_name <- "Taiwan"
+    } else if (str_detect(chn_name, "上海")) {
+      eng_name <- "Shanghai"
+    } else if (str_detect(chn_name, "云南")) {
+      eng_name <- "Yunnan"
+    } else if (str_detect(chn_name, "内蒙古")) {
+      eng_name <- "Inner Mongolia"
+    } else if (str_detect(chn_name, "北京")) {
+      eng_name <- "Beijing"
+    } else if (str_detect(chn_name, "台湾")) {
+      eng_name <- "Taiwan"
+    } else if (str_detect(chn_name, "吉林")) {
+      eng_name <- "Jilin"
+    } else if (str_detect(chn_name, "四川")) {
+      eng_name <- "Sichuan"
+    } else if (str_detect(chn_name, "天津")) {
+      eng_name <- "Tianjin"
+    } else if (str_detect(chn_name, "宁夏")) {
+      eng_name <- "Ningxia"
+    } else if (str_detect(chn_name, "安徽")) {
+      eng_name <- "Anhui"
+    } else if (str_detect(chn_name, "山东")) {
+      eng_name <- "Shandong"
+    } else if (str_detect(chn_name, "山西")) {
+      eng_name <- "Shanxi"
+    } else if (str_detect(chn_name, "广东")) {
+      eng_name <- "Guangdong"
+    } else if (str_detect(chn_name, "广西")) {
+      eng_name <- "Guangxi"
+    } else if (str_detect(chn_name, "新疆")) {
+      eng_name <- "Xinjiang"
+    } else if (str_detect(chn_name, "江苏")) {
+      eng_name <- "Jiangsu"
+    } else if (str_detect(chn_name, "江西")) {
+      eng_name <- "Jiangxi"
+    } else if (str_detect(chn_name, "河北")) {
+      eng_name <- "Hebei"
+    } else if (str_detect(chn_name, "河南")) {
+      eng_name <- "Henan"
+    } else if (str_detect(chn_name, "浙江")) {
+      eng_name <- "Zhejiang"
+    } else if (str_detect(chn_name, "海南")) {
+      eng_name <- "Hainan"
+    } else if (str_detect(chn_name, "湖北")) {
+      eng_name <- "Hubei"
+    } else if (str_detect(chn_name, "湖南")) {
+      eng_name <- "Hunan"
+    } else if (str_detect(chn_name, "甘肃")) {
+      eng_name <- "Gansu"
+    } else if (str_detect(chn_name, "福建")) {
+      eng_name <- "Fujian"
+    } else if (str_detect(chn_name, "西藏")) {
+      eng_name <- "Tibet"
+    } else if (str_detect(chn_name, "贵州")) {
+      eng_name <- "Guizhou"
+    } else if (str_detect(chn_name, "辽宁")) {
+      eng_name <- "Liaoning"
+    } else if (str_detect(chn_name, "重庆")) {
+      eng_name <- "Chongqing"
+    } else if (str_detect(chn_name, "陕西")) {
+      eng_name <- "Shanxi"
+    } else if (str_detect(chn_name, "青海")) {
+      eng_name <- "Qinghai"
+    } else if (str_detect(chn_name, "香港")) {
+      eng_name <- "Hong Kong"
+    } else if (str_detect(chn_name, "黑龙江")) {
+      eng_name <- "Heilongjiang"
+    } else {
+      eng_name <- chn_name # don't translate if no correspondence
+    }
+    return(eng_name)
+  })
+}
+```
+
+## Create a new variable `NAME_ENG` converting Chinese placenames to English
+
+```{r}
+chn_prov = chn_map %>% 
+  count(NAME) %>%
+  mutate(NAME_ENG = translate(NAME)) # translate function is vectorized
+chn_prov %>% print(n = Inf)
+```
+
+```{r}
+write_csv(chn_prov, "./covid_map/provs.csv")
+```
+
+## Plotting 2019-nCoV incidence
+
+Plot confirmed cases on a specific date
+
+```{r}
+plotdate = "2020-01-31"
+
+count <- "confirmed"
+
+covid %>%
+  filter(`Country/Region` %in% c("Mainland China", "Macau", "Hong Kong", "Taiwan")) %>%
+  filter(date == plotdate) %>%
+  group_by(`Province/State`) %>%
+  top_n(1, date) %>% # take the latest count on that date
+  right_join(chn_prov, by = c("Province/State" = "NAME_ENG")) %>%
+  ggplot() +
+  geom_sf(mapping = aes(fill = !!sym(count), geometry = geometry)) +
+  scale_fill_gradient(name = "Cases", 
+                      trans = "log10", 
+                      breaks = c(5, 50, 500, 5000, 50000, 100000),
+                      labels = c(5, 50, 500, 5000, 50000, 100000),
+                      guide = "legend",
+                      low = "lightblue",
+                      high = "red") +
+  theme_bw() +
+  labs(title = str_c(count, " cases"), subtitle = plotdate)
+```
+

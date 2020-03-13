@@ -11,11 +11,11 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Causes of Mortality in Trauma Surgical Intensive Care Unit (TSICU) Patients 
+# Factors Affecting Length of Stay in Trauma Surgical ICU (TSICU) patients involved in Motor Vehicle Accidents
 
-In my previous assignment (HW2), I noted that there was a noticeable spike in the age distribution of TSICU patients between the ages of 19-25. The TSICU serves patients with severe traumatic injury, respiratory failure as a consequence of major trauma, systemic organ failure, and critical illness post-surgery. (citation: https://www.ccm.pitt.edu/content/upmc-presbyterian-surgical-trauma-icu)  In this analysis, I will further explore possible associations between specific injury types and mortality, focusing on injury categories such as head/brain injuries, liver/spleen/kidney injuries, and blunt force trauma if possible.
+In my previous assignment (HW2), I noted that there was a noticeable spike in the age distribution of TSICU patients between the ages of 19-25, which I attributed to motor vehicle accidents. The TSICU serves patients with severe traumatic injury, respiratory failure as a consequence of major trauma, systemic organ failure, and critical illness post-surgery. (citation: https://www.ccm.pitt.edu/content/upmc-presbyterian-surgical-trauma-icu).  In this analysis, I will explore factors contributing to length of stay among TSICU patients who were involved in motor vehicle accidents.
 
-Mortality will be the primary outcome variable for the analysis. There is potential to explore alternative outcomes such as length of ICU stay and survival time (i.e. time between admission and death if applicable).
+Length of ICU stay (in days) will be the primary dependent variable for this analysis. Potential for alternative outcomes is to be determined.
 
 ## Connect to PostgresSQL database
 
@@ -57,13 +57,6 @@ dbListTables(con)
 An example SQL query:
 
 ```{r}
-sql_query <- "SELECT i.subject_id, i.hadm_id, i.los
-              FROM icustays i;"
-
-(data <- dbGetQuery(con, sql_query)) %>% as_tibble()
-```
-
-```{r}
 q = "SELECT * from icustays as i LIMIT 10"
 
 dbGetQuery(con, q) %>% as_tibble()
@@ -85,7 +78,7 @@ patients %>% print(width = Inf)
 
 ## Query and subsetting
 
-Using the tables `patients`, `icustays`, `d_icd_diagnoses` we create a cohort of only TSICU admits. Most likely, we will have to exclude some diagnoses.
+Using the tables `patients`, `icustays`, `d_icd_diagnoses` we create a cohort of only patients who were first admitted to the TSICU.
 
 ```{r}
 tbl(con, "transfers") %>%
@@ -96,9 +89,7 @@ tbl(con, "transfers") %>%
   print() -> ts_admits
 ```
 
-Now we want to restrict to heart attack patients. To find all possible ICD-9 codes related to heart attack, we search for string `myocardial infarction` in the `long_title` of table `d_icd_diagnoses`:
-
-tbl(con, "d_icd_diagnoses") %>% head()
+Now we want to restrict to patients who were involved in motor vehicle accidents. Let's find ICD codes containing **motor vehicle**:
 
 ```{r}
 tbl(con, "d_icd_diagnoses") %>%
@@ -106,11 +97,21 @@ tbl(con, "d_icd_diagnoses") %>%
   print() -> mi_codes
 ```
 
-`diagnoses_icd` table stores the diagnosis of each admission. We use `semi_join()` to keep the rows in `diagnoses_icd` that match the ICD-9 codes related to heart attack:
+There are over 150 codes involving motor vehicle accidents. On closer inspection, we can see that there are some major categories - about 60 are for non-traffic accidents, while some are sequelae of motor vehicle accidents (for example, E9520 - Suicide and self-inflicted poisoning by motor vehicle gas). I will restrict the cohort only to patients involved in accidents involving a vehicle directly (either traffic or non-traffic):
+
+```{r}
+tbl(con, "d_icd_diagnoses") %>%
+  filter(str_detect(tolower(long_title), "traffic accident")) %>%
+  select(icd9_code, long_title) %>%
+  print() -> icd_codes
+```
+
+The table `diagnoses_icd` stores the diagnosis for each admission. We use `semi_join()` to keep the rows in `diagnoses_icd` that match the ICD-9 codes related to heart attack:
+
 ```{r}
 tbl(con, "diagnoses_icd") %>%
-  semi_join(mi_codes, by = "icd9_code") %>%
-  print() -> mi_admissions
+  semi_join(icd_codes, by = "icd9_code") %>%
+  print() -> mv_admits
 ```
 
 MI may not be listed as the principal diagnosis; as explained in [the documentation for the `patients` table](https://mimic.physionet.org/mimictables/diagnoses_icd/), the `seq_num` field is a priority ranking for the diagnoses generated at the end of stay. In order to focus on patients for whom MI was central to their hospitalization, we will include records with MI in any of the first five diagnosis positions, according to the `seq_num` field. To avoid duplicate admissions, we use `group_by()` and `top_n()` to limit the query to the first MI diagnosis for each admission.

@@ -11,15 +11,19 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Causes of Mortality in Trauma Surgical Intensive Care Unit (TSICU) Patients 
+# Factors Affecting Length of Stay in Trauma Surgical ICU (TSICU) patients involved in Motor Vehicle Accidents
 
-In my previous assignment (HW2), I noted that there was a noticeable spike in the age distribution of TSICU patients between the ages of 19-25. The TSICU serves patients with severe traumatic injury, respiratory failure as a consequence of major trauma, systemic organ failure, and critical illness post-surgery. (citation: https://www.ccm.pitt.edu/content/upmc-presbyterian-surgical-trauma-icu)  In this analysis, I will further explore possible associations between specific injury types and mortality, focusing on injury categories such as head/brain injuries, liver/spleen/kidney injuries, and blunt force trauma if possible.
+In my previous assignment (HW2), I noted that there was a noticeable spike in the age distribution of TSICU patients between the ages of 19-25, which I attributed to motor vehicle accidents. The TSICU serves patients with severe traumatic injury, respiratory failure as a consequence of major trauma, systemic organ failure, and critical illness post-surgery. (citation: https://www.ccm.pitt.edu/content/upmc-presbyterian-surgical-trauma-icu).  In this analysis, I will explore factors contributing to length of stay among TSICU patients who were involved in motor vehicle accidents.
 
-Mortality will be the primary outcome variable for the analysis. There is potential to explore alternative outcomes such as length of ICU stay and survival time (i.e. time between admission and death if applicable).
+Length of ICU stay (in days) will be the primary dependent variable for this analysis. Potential for alternative outcomes is to be determined.
 
-## Connect to PostgresSQL database
+---
 
-### Load database libraries and the tidyverse frontend:
+## Exploratory Data Analysis
+
+### Connect to PostgresSQL database
+
+#### Load database libraries and the tidyverse frontend:
 
 ```{r}
 library(DBI)
@@ -57,35 +61,14 @@ dbListTables(con)
 An example SQL query:
 
 ```{r}
-sql_query <- "SELECT i.subject_id, i.hadm_id, i.los
-              FROM icustays i;"
-
-(data <- dbGetQuery(con, sql_query)) %>% as_tibble()
-```
-
-```{r}
 q = "SELECT * from icustays as i LIMIT 10"
 
 dbGetQuery(con, q) %>% as_tibble()
 ```
 
-```{r}
-#This document shows how RMarkdown can be used to create a reproducible analysis using MIMIC-III (version 1.4). Let's calculate the median length of stay in the ICU and then include this value in our document.
-(avg_los <- median(data$los, na.rm=TRUE))
-(rounded_avg_los <- round(avg_los, digits = 2))
-```
-
-## Connect to a table in database
-
-To connect to the `patients` table in the database:
-```{r}
-patients <- tbl(con, "patients")
-patients %>% print(width = Inf)
-```
-
 ## Query and subsetting
 
-Using the tables `patients`, `icustays`, `d_icd_diagnoses` we create a cohort of only TSICU admits. Most likely, we will have to exclude some diagnoses.
+Using the tables `patients`, `icustays`, `d_icd_diagnoses` we create a cohort of only patients who were first admitted to the TSICU.
 
 ```{r}
 tbl(con, "transfers") %>%
@@ -96,102 +79,100 @@ tbl(con, "transfers") %>%
   print() -> ts_admits
 ```
 
-Now we want to restrict to heart attack patients. To find all possible ICD-9 codes related to heart attack, we search for string `myocardial infarction` in the `long_title` of table `d_icd_diagnoses`:
-
-tbl(con, "d_icd_diagnoses") %>% head()
+Now we want to restrict to patients who were involved in motor vehicle accidents. Let's find ICD codes containing **motor vehicle**:
 
 ```{r}
 tbl(con, "d_icd_diagnoses") %>%
   filter(str_detect(tolower(long_title), "motor vehicle")) %>%
-  print() -> mi_codes
+  print()
 ```
 
-`diagnoses_icd` table stores the diagnosis of each admission. We use `semi_join()` to keep the rows in `diagnoses_icd` that match the ICD-9 codes related to heart attack:
+There are over 150 ICD codes involving motor vehicle accidents. On closer inspection, we can see that there are some major categories - about 60 are for non-traffic accidents, while some are sequelae of motor vehicle accidents (for example, E9520 - Suicide and self-inflicted poisoning by motor vehicle gas). I will restrict the cohort only to patients involved in accidents involving a vehicle directly (either traffic or non-traffic). This should include all vehicle types (bicycle, motorcycle, even animal riders).
+
+```{r}
+tbl(con, "d_icd_diagnoses") %>%
+  filter(str_detect(tolower(long_title), "traffic accident")) %>%
+  select(icd9_code, long_title) %>%
+  print() -> mv_codes
+```
+
+The table `diagnoses_icd` stores the diagnosis for each admission. We use `semi_join()` to keep the rows in `diagnoses_icd` that match the ICD-9 codes we found before:
+
 ```{r}
 tbl(con, "diagnoses_icd") %>%
-  semi_join(mi_codes, by = "icd9_code") %>%
-  print() -> mi_admissions
+  semi_join(mv_codes, by = "icd9_code") %>%
+  print() -> mv_admits
 ```
 
-MI may not be listed as the principal diagnosis; as explained in [the documentation for the `patients` table](https://mimic.physionet.org/mimictables/diagnoses_icd/), the `seq_num` field is a priority ranking for the diagnoses generated at the end of stay. In order to focus on patients for whom MI was central to their hospitalization, we will include records with MI in any of the first five diagnosis positions, according to the `seq_num` field. To avoid duplicate admissions, we use `group_by()` and `top_n()` to limit the query to the first MI diagnosis for each admission.
+Dr. Zhou previously found that the field `seq_num` represents the priority ranking for the reason for admission. Since motor vehicle accidents may indicate an broad indicator of reason for admission, I will expand the range of `seq_num` to be included in the cohort to 1-10 (compared to the 1-5 range for the example analysis of myocardial infarction).
 
 ```{r}
-mi_admissions %>%
-  filter(seq_num <= 5) %>%
+mv_admits %>%
+  filter(seq_num <= 10) %>%
   group_by(subject_id, hadm_id) %>%
-  # top_n(1, wt = seq_num) %>% #  not working. bug? use following as workaround
   filter(min_rank(seq_num) <= 1) %>%
   ungroup() %>%
   select(subject_id, hadm_id, icd9_code, seq_num) %>%
-  print() -> mi_admissions
+  print() -> mv_admits
 ```
-Now we `inner_join` the table of admissions to CCU and the table of admissions that include MI diagnosis.
+
+Now we `inner_join` the table of admissions to CCU and the table of admissions that include our specific vehicle accident-related diagnoses.
+
 ```{r}
-ccu_admissions %>%
-  inner_join(mi_admissions, by = c("subject_id", "hadm_id")) %>%
-  print() -> study_admissions
+ts_admits %>%
+  inner_join(mv_admits, by = c("subject_id", "hadm_id")) %>%
+  print() -> ts_cohort
+
+ts_cohort %>% as_tibble() -> ts_cohort
 ```
 
-## Transform and augment query tables
-
-Now we create a logical variable indicating the MI is the principal diagonosis or not (according to `seq_num`).
 ```{r}
-study_admissions %>%
-  mutate(principal_dx = seq_num == 1) %>%
-  select(-seq_num) %>%
-  print() -> study_admissions
+head(ts_cohort)
+dim(ts_cohort)
 ```
 
-We want to add information about the severity of patients’ ailments. The `drgcodes` table contains, for `DRG` codes from the All Payers Registry (APR), severity and mortality indicators. We pull the drug severity information and right-join it to our query table.
+Our cohort of motor vehicle accident victims is quite small (could be detrimental to a heavily stratified analysis but is a good sign for public health).
+
+From the `admissions` table, obtain the in and out times for each patient so we can calculate length of hospital stay. We can also obtain the length of each ICU stay from the `icustays` table.
+
+```{r}  
+tbl(con, "admissions") %>% 
+  select(subject_id, hadm_id, admittime, dischtime, hospital_expire_flag, 
+         edregtime, edouttime) %>%
+  as_tibble -> admits
+          
+tbl(con, "patients") %>% select(subject_id, dob, dod) %>% as_tibble() -> pts
+
+tbl(con, "icustays") %>% select(subject_id, hadm_id, los) %>% as_tibble -> icu
+
+ts_cohort %>% left_join(pts, by = "subject_id") %>% 
+  left_join(icu, by = c("subject_id", "hadm_id")) %>%
+  left_join(admits, by = c("subject_id", "hadm_id")) -> ts_cohort
+
+ts_cohort %>% rename(icu_los = los) -> ts_cohort
+```
+
+Now that we have some time-based information, let's calculate some summary variables:
+
+  1) Calculate `age` by subtracting the date of birth (`dob`) from the time of admission (`admittime`).
+  2) Calculate time in the emergency room `ed_time` by subtracting `edregtime` from `edouttime`.
+  3) Calculate time in hospital `hosp_time` by subtracting `admittime` from the time of discharge (`dischtime`).
+  
+Once we have these columns, we can drop the component variables.
+
+Additionally, from Project 2, remember that patients with ages $\ge$ 90 had their ages masked. For simplicity's sake, let's remove patients aged 90 and over from the cohort.
+
 ```{r}
-tbl(con, "drgcodes") %>%
-  filter(str_detect(drg_type, "APR")) %>%
-  select(subject_id, hadm_id, drg_severity) %>%
-  right_join(study_admissions, by = c("subject_id", "hadm_id")) %>%
-  mutate(drg_severity = ifelse(is.na(drg_severity), 1, drg_severity)) %>%
-  print() -> study_admissions
+ts_cohort %>%
+  mutate(age = as.numeric(admittime - dob, "weeks") / 52.25) %>%
+  mutate(ed_time = as.numeric(edouttime - edregtime, "days")) %>%
+  mutate(hosp_time = as.numeric(dischtime - admittime, "days")) %>%
+  select(-c(admittime, dischtime, edregtime, edouttime, dob, dod)) %>%
+  filter(age < 90) -> ts_cohort
 ```
 
-Pull the admission time `admittime`, discharge time `dischtime`, date of birth `dob`, and date of death `dod`. We are interested in the  mortaility rate 30 days after discharge. So we only keep patients who didn't die in hospital.
-```{r}
-study_admissions %>%
-  left_join(
-    select(tbl(con, "admissions"),
-           subject_id, hadm_id, admittime, dischtime, hospital_expire_flag
-    ), by = c("subject_id", "hadm_id")
-  ) %>%
-  filter(hospital_expire_flag == 0) %>% # patients who did not die in hospital
-  select(-hospital_expire_flag) %>%
-  left_join(
-    select(tbl(con, "patients"), subject_id, dob, dod),
-    by = "subject_id"
-  ) %>%
-  print(width = Inf) -> study_admissions
-```
+From the `admissions` and `patients` tables, we can grab some demographics:
 
-To add `age` (at admission) variable into the table. [The documentation for the patients table](https://mimic.physionet.org/mimictables/patients/) explains that patients of 90 years and older had their ages artificially inflated, so we remove these patients from the analysis.
-```{r}
-study_admissions %>%
-  mutate(tt_death = date_part("day", dod) - date_part("day", dischtime)) %>%
-  mutate(mortality = tt_death <= 30) %>%
-  mutate(age = date_part("year", admittime) - date_part("year", dob)) %>%
-  filter(age < 90) %>%
-  mutate(age = age - ifelse(
-    date_part("month", admittime) < date_part("month", dob) |
-      (
-        date_part("month", admittime) == date_part("month", dob) &
-          date_part("day", admittime) < date_part("day", dob)
-      ),
-    1,
-    0
-  )) %>%
-  select(-admittime, -dischtime, -dob, -dod, -tt_death) %>%
-  select(subject_id, hadm_id, age, mortality, everything()) %>%
-  print() -> study_admissions
-```
-Many mortality indicators are missing, due to neither the hospital database nor the social security database having a record of these patients’ deaths. We could convert these to `FALSE` values, but it may be helpful to retain in the analytic table this information on whether deaths were recorded at all, e.g. for validation or sensitivity testing.
-
-Finally, let's merge some demographic information (ethnicity, gender) into our study `study_admissions`.
 ```{r}
 tbl(con, "admissions") %>%
   select(subject_id, ethnicity) %>%
@@ -203,14 +184,16 @@ tbl(con, "patients") %>%
   select(subject_id, gender) %>%
   distinct() %>%
   full_join(study_subjects, by = "subject_id") %>%
-  print() -> study_subjects
+  as_tibble -> pt_gender
 ```
 ```{r}
 study_subjects %>%
-  semi_join(study_admissions, by = "subject_id") %>%
+  semi_join(ts_cohort, by = "subject_id") %>%
   print() -> study_subjects
 ```
+
 Let's resolves ome diversity and inconsistency in the `ethnicity` field:
+
 ```{r}
 unknown_ethnicity <- c(
   "OTHER",

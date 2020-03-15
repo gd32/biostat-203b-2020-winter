@@ -87,6 +87,7 @@ tbl(con, "d_icd_diagnoses") %>%
   print()
 ```
 
+<<<<<<< HEAD
 There are over 150 ICD codes involving motor vehicle accidents. On closer inspection, we can see that there are some major categories - about 60 are for non-traffic accidents, while some are sequelae of motor vehicle accidents (for example, E9520 - Suicide and self-inflicted poisoning by motor vehicle gas). I will restrict the cohort only to patients involved in accidents involving a vehicle directly (either traffic or non-traffic). This should include all vehicle types (bicycle, motorcycle, even animal riders).
 
 ```{r}
@@ -98,10 +99,33 @@ tbl(con, "d_icd_diagnoses") %>%
 
 The table `diagnoses_icd` stores the diagnosis for each admission. We use `semi_join()` to keep the rows in `diagnoses_icd` that match the ICD-9 codes we found before:
 
+||||||| merged common ancestors
+`diagnoses_icd` table stores the diagnosis of each admission. We use `semi_join()` to keep the rows in `diagnoses_icd` that match the ICD-9 codes related to heart attack:
+=======
+There are over 150 codes involving motor vehicle accidents. On closer inspection, we can see that there are some major categories - about 60 are for non-traffic accidents, while some are sequelae of motor vehicle accidents (for example, E9520 - Suicide and self-inflicted poisoning by motor vehicle gas). I will restrict the cohort only to patients involved in accidents involving a vehicle directly (either traffic or non-traffic):
+
+```{r}
+tbl(con, "d_icd_diagnoses") %>%
+  filter(str_detect(tolower(long_title), "traffic accident")) %>%
+  select(icd9_code, long_title) %>%
+  print() -> icd_codes
+```
+
+The table `diagnoses_icd` stores the diagnosis for each admission. We use `semi_join()` to keep the rows in `diagnoses_icd` that match the ICD-9 codes related to heart attack:
+
+>>>>>>> a3d05295d9e75e037a4b101a35b0f7c741693264
 ```{r}
 tbl(con, "diagnoses_icd") %>%
+<<<<<<< HEAD
   semi_join(mv_codes, by = "icd9_code") %>%
   print() -> mv_admits
+||||||| merged common ancestors
+  semi_join(mi_codes, by = "icd9_code") %>%
+  print() -> mi_admissions
+=======
+  semi_join(icd_codes, by = "icd9_code") %>%
+  print() -> mv_admits
+>>>>>>> a3d05295d9e75e037a4b101a35b0f7c741693264
 ```
 
 Dr. Zhou previously found that the field `seq_num` represents the priority ranking for the reason for admission. Since motor vehicle accidents may indicate an broad indicator of reason for admission, I will expand the range of `seq_num` to be included in the cohort to 1-10 (compared to the 1-5 range for the example analysis of myocardial infarction).

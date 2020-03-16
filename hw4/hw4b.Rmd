@@ -1,0 +1,189 @@
+---
+title: "HW4 - Visualization"
+author: "George Dewey"
+date: "3/15/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Create visualizations for final report
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(grid)
+library(gridExtra)
+library(ggthemes)
+```
+
+### Load data
+
+```{r}
+ts_cohort = readRDS("ts_cohort")
+ts_cohort
+```
+
+### Fix marital status variable
+
+```{r}
+ts_cohort %>% mutate(ever_married = case_when(
+  marital_status %in% c("MARRIED", 
+                        "WIDOWED", 
+                        "SEPARATED", 
+                        "WIDOWED", 
+                        "LIFE PARTNER") ~ T, 
+  marital_status == "SINGLE" ~ F,
+  marital_status %in% c("UNKNOWN (DEFAULT)", "NA") ~ NA)) %>%
+  select(-marital_status) -> ts_cohort
+```
+
+### Set `ggplot2` theme parameters
+
+```{r}
+theme_set(theme_stata())
+```
+---
+
+## Univariate Analysis
+
+Here we visualize distribution of individual variables. For skewed continuous variables (most of the duration of stay variables), I chose to display boxplots instead of histograms to accentuate the long tails. Graphics are grouped plots by variable type, either continuous or discrete.
+
+### Outcome 
+
+```{r}
+ts_cohort %>% ggplot() +
+  geom_boxplot(aes("", hosp_time)) +
+  ylab("Time in Hospital [Days]") +
+  xlab("") +
+  ggtitle("Distribution of Duration of Hospital Stay")
+  theme(axis.ticks.x = element_blank()) 
+```
+
+### Continuous Variables
+
+```{r}
+c1 = ts_cohort %>% ggplot() +
+  geom_bar(aes(seq_num), fill = "dodgerblue4") +
+  scale_x_continuous(breaks = seq(0, 10, 2)) +
+  xlab("Diagnosis Priority") +
+  ylab("Count") 
+
+c2 = ts_cohort %>% ggplot() +
+  geom_boxplot(aes("", icu_los)) +
+  ylab("ICU Length of Stay [Days]") +
+  xlab("") +
+  theme(axis.ticks.x = element_blank())
+
+c3 = ts_cohort %>% ggplot() +
+  geom_histogram(aes(age), binwidth = 10, fill = "dodgerblue4") +
+  xlab("Age [Years]") +
+  ylab("Count") +
+  scale_x_continuous(breaks = seq(0, 90, 15))
+
+c4 = ts_cohort %>% mutate(ed_time_hrs = ed_time*24) %>% ggplot() +
+  geom_boxplot(aes("", ed_time_hrs)) +
+  ylab("Time in Emergency Room [Hours]") +
+  xlab("") +
+  theme(axis.ticks.x = element_blank())
+
+grid.arrange(c1, c2, c3, c4, nrow = 2,
+  top = textGrob("Continuous Predictors",
+                 gp = gpar(fontsize = 20, font = 2)))
+
+```
+
+### Discrete Predictors
+
+```{r}
+d1 = ts_cohort %>% ggplot() +
+  geom_bar(aes(factor(hospital_expire_flag), ..prop.., group = 1), fill = "dodgerblue4") +
+  xlab("Survival Status")
+  ylab("Proportion") +
+  scale_x_discrete(labels = c("Survived", "Died")) +
+  scale_y_continuous(breaks = seq(0, 1, by = 0.2))
+
+d2 = ts_cohort %>% ggplot() +
+  geom_bar(aes(gender, ..prop.., group = 1), fill = "dodgerblue4") +
+  xlab("Gender") +
+  ylab("Proportion") +
+  scale_x_discrete(labels = c("Female", "Male"))
+
+d3 = ts_cohort %>%
+  ggplot() +
+  geom_bar(aes(ever_married, ..prop.., group = 1), fill = "dodgerblue4") +
+  xlab("Ever Married Status") +
+  ylab("Proportion") 
+
+d4 = ts_cohort %>% ggplot() +
+  geom_bar(aes(ethnic_group, ..prop.., group = 1), fill = "dodgerblue4") +
+  xlab("Ethnicity") +
+  ylab("Proportion")
+
+dp = grid.arrange(d1, d2, d3, d4, nrow = 2,
+  top = textGrob("Discrete Predictors",
+                 gp = gpar(fontsize = 20, font = 2)))
+```
+---
+
+## Bivariate Analysis
+
+For a continuous outcome, bivariate analysis can be useful in determining valuable predictors for a model. For continuous variables, we use scatterplots; for discrete variables, we used grouped boxplots.
+
+```{r}
+bv1 = ts_cohort %>% ggplot() +
+  geom_point(aes(x = seq_num, y = hosp_time)) +
+  ylab("Time in Hospital [Days]") +
+  xlab("Diagnosis Priority")
+
+bv2 = ts_cohort %>% ggplot() +
+  geom_point(aes(x = icu_los, y = hosp_time)) +
+  ylab("Time in Hospital [Days]") +
+  xlab("Time in ICU [Days]")
+
+bv3 = ts_cohort %>% ggplot() +
+  geom_point(aes(x = age, y = hosp_time)) +
+  ylab("Time in Hospital [Days]") +
+  xlab("Age [Years]")
+
+bv4 = ts_cohort %>% mutate(ed_time_hrs = ed_time*24) %>% 
+  ggplot() + geom_point(aes(x = ed_time_hrs, y = hosp_time)) +
+  ylab("Time in Hospital [Days]") +
+  xlab("Time in Emergency Room [Hours]")
+
+grid.arrange(bv1, bv2, bv3, bv4, nrow = 2,
+  top = textGrob("Bivariate Analysis, Continuous Predictors",
+                 gp = gpar(fontsize = 20, font = 2)))
+
+```
+
+```{r}
+bv5 = ts_cohort %>% ggplot() +
+  geom_boxplot(aes(x = factor(hospital_expire_flag), y = hosp_time)) +
+  xlab("Survival Status") +
+  ylab("Time in Hospital [Days]") +
+  scale_x_discrete(labels = c("Survived", "Died"))
+
+bv6 = ts_cohort %>% ggplot() +
+  geom_boxplot(aes(x = gender, y = hosp_time)) +
+  ylab("Time in Hospital [Days]") + 
+  xlab("Gender") +
+  scale_x_discrete(labels = c("Female", "Male"))
+
+bv7 = ts_cohort %>% ggplot() +
+  geom_boxplot(aes(x = ever_married, y = hosp_time)) +
+  ylab("Time in Hospital [Days]") +
+  xlab("Marital Status") +
+  scale_x_discrete(labels = c("Ever Married", "Never Married"))
+
+bv8 = ts_cohort %>% ggplot() +
+  geom_boxplot(aes(x = ethnic_group, y = hosp_time)) +
+  ylab("Time in Hospital [Days]") +
+  xlab("Ethnicity") 
+
+grid.arrange(bv5, bv6, bv7, bv8, nrow = 2,
+  top = textGrob("Bivariate Analysis, Discrete Predictors",
+                 gp = gpar(fontsize = 20, font = 2)))
+```

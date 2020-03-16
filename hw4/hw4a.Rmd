@@ -1,10 +1,7 @@
 ---
-title: "HW4 - EDA"
+title: "HW4 - Exploratory Data Analysis"
 author: "George Dewey"
-output:
-    html_document:
-    toc: true
-    toc_depth: 4
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -13,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Factors Affecting Length of Stay in Trauma Surgical ICU (TSICU) patients involved in Motor Vehicle Accidents
 
-In my previous assignment (HW2), I noted that there was a noticeable spike in the age distribution of TSICU patients between the ages of 19-25, which I attributed to motor vehicle accidents. The TSICU serves patients with severe traumatic injury, respiratory failure as a consequence of major trauma, systemic organ failure, and critical illness post-surgery. (citation: https://www.ccm.pitt.edu/content/upmc-presbyterian-surgical-trauma-icu).  In this analysis, I will explore factors contributing to length of stay among TSICU patients who were involved in motor vehicle accidents.
+In Homework 2, I noted that there was a noticeable spike in the age distribution of TSICU patients between the ages of 19-25, which I attributed to motor vehicle accidents. The TSICU serves patients with severe traumatic injury, respiratory failure as a consequence of major trauma, systemic organ failure, and critical illness post-surgery. (citation: [here][https://www.ccm.pitt.edu/content/upmc-presbyterian-surgical-trauma-icu] ).  In this analysis, I will explore factors contributing to length of stay among TSICU patients who were involved in motor vehicle accidents.
 
 Length of ICU stay (in days) will be the primary dependent variable for this analysis. Potential for alternative outcomes is to be determined.
 

@@ -1,5 +1,5 @@
 ---
-title: "Biostat 203B Homework 4"
+title: "HW4 - EDA"
 author: "George Dewey"
 output:
     html_document:
@@ -16,8 +16,6 @@ knitr::opts_chunk$set(echo = TRUE)
 In my previous assignment (HW2), I noted that there was a noticeable spike in the age distribution of TSICU patients between the ages of 19-25, which I attributed to motor vehicle accidents. The TSICU serves patients with severe traumatic injury, respiratory failure as a consequence of major trauma, systemic organ failure, and critical illness post-surgery. (citation: https://www.ccm.pitt.edu/content/upmc-presbyterian-surgical-trauma-icu).  In this analysis, I will explore factors contributing to length of stay among TSICU patients who were involved in motor vehicle accidents.
 
 Length of ICU stay (in days) will be the primary dependent variable for this analysis. Potential for alternative outcomes is to be determined.
-
----
 
 ## Exploratory Data Analysis
 
@@ -228,47 +226,16 @@ unknown_ethnicity <- c(
   "UNKNOWN"
 )
 
-study_subjects %>%
-  collect() %>%
-  mutate(ethnic_group = case_when(
+ts_cohort %>% mutate(ethnic_group = case_when(
     str_detect(ethnicity, "^ASIAN") ~ "ASIAN",
     str_detect(ethnicity, "^BLACK") ~ "BLACK",
     str_detect(ethnicity, "^HISPANIC") ~ "HISPANIC",
     str_detect(ethnicity, "^WHITE") ~ "WHITE",
     ethnicity %in% unknown_ethnicity ~ NA_character_,
     TRUE ~ NA_character_
-  )) %>%
-  select(subject_id, gender, ethnic_group) %>%
-  print() -> study_subjects
-```
+  )) %>% select(-ethnicity) -> ts_cohort
 
-Some patients are coded as belonging to more than one ethnic group. To resolve these inconsistencies, we define a helper function to pick the modal value from a vector of values in R, which can be used by the `summarize()` function to choose one ethnic group for each patient.
-```{r}
-most <- function(x) {
-  if (all(is.na(x))) return(NA_character_)
-  y <- table(x, useNA = "no")
-  if (length(which(y == max(y))) > 1) return(NA_character_)
-  return(names(y)[which.max(y)])
-}
-
-study_subjects %>%
-  group_by(subject_id) %>%
-  summarize(ethnic_group = most(ethnic_group)) %>%
-  ungroup() %>%
-  mutate(ethnic_group = ifelse(is.na(ethnic_group), "UNKNOWN", ethnic_group)) %>%
-  print() -> subject_ethnic_groups
-```
-```{r}
-study_subjects %>%
-  select(subject_id, gender) %>%
-  left_join(subject_ethnic_groups, by = "subject_id") %>%
-  print() -> study_subjects
-```
-Now we add the demographic information `gender` and `ethnicity` into our `study_admissions` table:
-```{r}
-study_admissions %>%
-  left_join(study_subjects, by = "subject_id", copy = TRUE) %>%
-  print() -> study_admissions
+ts_cohort
 ```
 
 ## Close the connection to a database
@@ -278,73 +245,9 @@ Close the connection:
 dbDisconnect(con)
 ```
 
-## CONSORT Flow Diagrams
+## Export to RDS for use in analysis
 
-CONSORT Flow Diagrams can be used to plot the flow of data selection of a patient cohort.   
-For more details, see:
-[The CONSORT Flow Diagram](http://www.consort-statement.org/consort-statement/flow-diagram). Following code shows an example. 
-
-```{r plot}
-library(shape)
-library(diagram)
-
-# set margins and multiplot
-par(mfrow = c(1, 1))
-par(mar = c(0, 0, 0, 0))
-
-# initialise a plot device
-openplotmat()
-
-# position of boxes
-# 1st column indicates x axis position between 0 and 1
-# 2nd column indicates y axis position between 0 and 1
-# automatically assigns vertical position
-num_of_boxes <- 6
-auto_coords = coordinates(num_of_boxes)
-vert_pos = rev(auto_coords[,1])
-box_pos <- matrix(nrow = num_of_boxes, ncol = 2, data = 0)
-box_pos[1,] = c(0.20, vert_pos[1]) # 1st box
-box_pos[2,] = c(0.70, vert_pos[2]) # 2nd box
-box_pos[3,] = c(0.70, vert_pos[3]) # 3rd box
-box_pos[4,] = c(0.70, vert_pos[4]) # etc...
-box_pos[5,] = c(0.70, vert_pos[5])
-box_pos[6,] = c(0.20, vert_pos[6])
-
-# content of boxes
-box_content <- matrix(nrow = num_of_boxes, ncol = 1, data = 0)
-box_content[1] = "All patients in MIMIC-III \n n = 58,976" # 1st box
-box_content[2] = "Exclude patients of age < 18 \n n = 8,180" # 2nd box
-box_content[3] = "Exclude patients with no ICU admissions \n n = 1,071" # 3rd box
-box_content[4] = "Exclude patients with diabetes \n n = 1,324" # etc...
-box_content[5] = "Exclude patients with sepsis \n n = 4,804"
-box_content[6] = "Study cohort \n n = 43,597"
-
-# adjust the size of boxes to fit content
-box_x <- c(0.20, 0.25, 0.25, 0.25, 0.25, 0.20)
-box_y <- c(0.07, 0.07, 0.07, 0.07, 0.07, 0.07)
-
-# Draw the arrows
-straightarrow(from = c(box_pos[1,1],box_pos[2,2]), to = box_pos[2,], lwd = 1)  
-straightarrow(from = c(box_pos[1,1],box_pos[3,2]), to = box_pos[3,], lwd = 1)  
-straightarrow(from = c(box_pos[1,1],box_pos[4,2]), to = box_pos[4,], lwd = 1)  
-straightarrow(from = c(box_pos[1,1],box_pos[5,2]), to = box_pos[5,], lwd = 1)  
-straightarrow(from = box_pos[1,], to = box_pos[6,], lwd = 1)
-
-# Draw the boxes
-for (i in 1:num_of_boxes) {
-  textrect(mid = box_pos[i,], radx = box_x[i], rady = box_y[i], 
-           lab = box_content[i], 
-           shadow.col = "grey")
-  }
+```{r}
+saveRDS(ts_cohort, "ts_cohort")
 ```
 
-## Install PostgreSQL and `RpostgreSQL` package on CentOS
-
-This is a note to myself (Dr. Hua Zhou). The postgres in yum is an old version. We want to install the most recent postgres and then build the `RpostgreSQL` package based on it. 
-
-1. Follow instructions in <https://www.digitalocean.com/community/tutorials/how-to-install-and-use-postgresql-on-centos-7> to install PostgreSQL 11 on CentOS 7. 
-
-2. Issue following command to install `RPostgreSQL` in R:
-```{bash, eval = F}
-sudo R -e 'Sys.setenv(PG_INCDIR="/usr/pgsql-11/include/"); Sys.setenv(PG_LIBDIR="/usr/pgsql-11/lib/"); install.packages("RPostgreSQL")'
-```

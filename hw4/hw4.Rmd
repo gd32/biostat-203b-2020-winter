@@ -208,15 +208,15 @@ tbl(con, "patients") %>%
   select(subject_id, gender) %>%
   distinct() %>%
   full_join(study_subjects, by = "subject_id") %>%
-  as_tibble -> pt_gender
-```
-```{r}
-study_subjects %>%
-  semi_join(ts_cohort, by = "subject_id") %>%
   print() -> study_subjects
 ```
+```{r}
+study_subjects %>% as_tibble -> subjects
 
-Let's resolves ome diversity and inconsistency in the `ethnicity` field:
+(ts_cohort %>% left_join(subjects, by = "subject_id") -> ts_cohort)
+```
+
+We can use Dr. Zhou's example code to collapse ethnicity values and remove unknown/nulls:
 
 ```{r}
 unknown_ethnicity <- c(

@@ -10,17 +10,19 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Factors Affecting Length of Stay in Trauma Surgical ICU (TSICU) patients involved in Motor Vehicle Accidents
 
-In Homework 2, I noted that there was a noticeable spike in the age distribution of TSICU patients between the ages of 19-25, which I attributed to motor vehicle accidents. The TSICU serves patients with severe traumatic injury, respiratory failure as a consequence of major trauma, systemic organ failure, and critical illness post-surgery. (citation: [here][https://www.ccm.pitt.edu/content/upmc-presbyterian-surgical-trauma-icu] ).  In this analysis, I will explore factors contributing to length of stay among TSICU patients who were involved in motor vehicle accidents.
+---
 
-Length of ICU stay (in days) will be the primary dependent variable for this analysis. Potential for alternative outcomes is to be determined.
+In Homework 2, I noted that there was a noticeable spike in the age distribution of TSICU patients between the ages of 19-25, which I attributed to motor vehicle accidents. The TSICU serves patients with severe traumatic injury, respiratory failure as a consequence of major trauma, systemic organ failure, and critical illness post-surgery. (citation: [link](https://www.ccm.pitt.edu/content/upmc-presbyterian-surgical-trauma-icu)).  In this analysis, I will explore factors contributing to length of stay among TSICU patients who were involved in motor vehicle accidents.
+
+Length of hospital stay (in days) will be the primary dependent variable for this analysis. 
 
 ## Exploratory Data Analysis
 
 ### Connect to PostgresSQL database
 
-#### Load database libraries and the tidyverse frontend:
+#### Load database libraries and the tidyverse frontend
 
-```{r}
+```{r, include = FALSE}
 library(DBI)
 library(RPostgreSQL)
 library(tidyverse)
@@ -47,23 +49,9 @@ dbExecute(con, paste("SET search_path TO ", schema, sep = " "))
 con
 ```
 
-List tables in the `mimic` database:
-
-```{r}
-dbListTables(con)
-```
-
-An example SQL query:
-
-```{r}
-q = "SELECT * from icustays as i LIMIT 10"
-
-dbGetQuery(con, q) %>% as_tibble()
-```
-
 ## Query and subsetting
 
-Using the tables `patients`, `icustays`, `d_icd_diagnoses` we create a cohort of only patients who were first admitted to the TSICU.
+Using the tables `patients`, `icustays`, and `d_icd_diagnoses` we create a cohort of only patients who were first admitted to the TSICU.
 
 ```{r}
 tbl(con, "transfers") %>%

@@ -1,0 +1,59 @@
+---
+title: "HW4 - Analysis"
+author: "George Dewey"
+date: "3/16/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Analysis
+
+We will run two types of models for this analysis - a linear regression (potentially with optimization) and a neural network-based regression - and compare their performance.
+
+### Load Data
+
+```{r}
+ts = readRDS("ts_cohort_analysis")
+```
+
+```{r}
+ts
+```
+
+### Linear Regression
+
+Based on the graphics created previously, I am going to included the following predictors in a linear regression model using `hosp_time` - the overall time in hospital measured in days - as the outcome variables:
+
+* Age
+* Diagnosis Priority (i.e. `seq_num`)
+* Time in ICU (measured in days)
+* Survival status
+* Gender
+* Marital Status
+* Ethnicity
+
+I choose not to include time in ER as it is likely highly correlated with time in ICU. While there may be concerns with reverse causation with regarsd to survival status, I am looking at this problem in a purely predictive sense and thus the fact that people certain to die have much shorter hospital stays compared to those who may survive is worth noting.
+
+```{r}
+model1 = lm(hosp_time ~ seq_num + icu_los + factor(hospital_expire_flag) + age + factor(gender) + relevel(as.factor(ts$ethnic_group), ref = "WHITE") + factor(ever_married), data = ts)
+summary(model1)
+#RMSE
+c(crossprod(model1$residuals))/length(model1$residuals)
+```
+
+```{r}
+model2 = lm(hosp_time ~ seq_num + icu_los + factor(hospital_expire_flag), data = ts)
+summary(model2)
+#RMSE
+c(crossprod(model2$residuals))/length(model2$residuals)
+```
+
+Overall the linear model doesn't perform very well for either the large (`model1`) or small (`model2`) models. The most likely reason for this is that motor vehicle accidents are linked to a large variety of trauma-type injuries of different severity; we can see that demographic factors do not factor strongly into either model. It is worth noting that the diagnosis priority had a statistically significant positive regression coefficient, suggesting that multiple complications from a vehicular accident (and thus a lower priority for the diagnosis of the vehicle accident itself) increases length of hospital stay.
+
+---
+
+### Neural Network Regression
+

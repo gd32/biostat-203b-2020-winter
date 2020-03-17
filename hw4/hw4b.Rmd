@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Create visualizations for final report
 
-```{r}
+```{r include=FALSE}
 library(tidyverse)
 library(lubridate)
 library(grid)
@@ -45,6 +45,7 @@ ts_cohort %>% mutate(ever_married = case_when(
 ```{r}
 theme_set(theme_stata())
 ```
+
 ---
 
 ## Univariate Analysis
@@ -54,12 +55,14 @@ Here we visualize distribution of individual variables. For skewed continuous va
 ### Outcome 
 
 ```{r}
-ts_cohort %>% ggplot() +
+outcome = ts_cohort %>% ggplot() +
   geom_boxplot(aes("", hosp_time)) +
   ylab("Time in Hospital [Days]") +
   xlab("") +
   ggtitle("Distribution of Duration of Hospital Stay")
   theme(axis.ticks.x = element_blank()) 
+  
+ggsave("outcome.png", plot = outcome)
 ```
 
 ### Continuous Variables
@@ -89,9 +92,11 @@ c4 = ts_cohort %>% mutate(ed_time_hrs = ed_time*24) %>% ggplot() +
   xlab("") +
   theme(axis.ticks.x = element_blank())
 
-grid.arrange(c1, c2, c3, c4, nrow = 2,
-  top = textGrob("Continuous Predictors",
-                 gp = gpar(fontsize = 20, font = 2)))
+cvars = grid.arrange(c1, c2, c3, c4, nrow = 2,
+                     top = textGrob("Continuous Predictors",
+                     gp = gpar(fontsize = 20, font = 2)))
+
+ggsave("cvars.png", plot = cvars)
 
 ```
 
@@ -125,7 +130,10 @@ d4 = ts_cohort %>% ggplot() +
 dp = grid.arrange(d1, d2, d3, d4, nrow = 2,
   top = textGrob("Discrete Predictors",
                  gp = gpar(fontsize = 20, font = 2)))
+
+ggsave("dvars.png", plot = dp)
 ```
+
 ---
 
 ## Bivariate Analysis
@@ -153,10 +161,11 @@ bv4 = ts_cohort %>% mutate(ed_time_hrs = ed_time*24) %>%
   ylab("Time in Hospital [Days]") +
   xlab("Time in Emergency Room [Hours]")
 
-grid.arrange(bv1, bv2, bv3, bv4, nrow = 2,
+bv_conts = grid.arrange(bv1, bv2, bv3, bv4, nrow = 2,
   top = textGrob("Bivariate Analysis, Continuous Predictors",
                  gp = gpar(fontsize = 20, font = 2)))
 
+ggsave("bv_conts.png", plot = bv_conts)
 ```
 
 ```{r}
@@ -183,7 +192,14 @@ bv8 = ts_cohort %>% ggplot() +
   ylab("Time in Hospital [Days]") +
   xlab("Ethnicity") 
 
-grid.arrange(bv5, bv6, bv7, bv8, nrow = 2,
+bv_disc = grid.arrange(bv5, bv6, bv7, bv8, nrow = 2,
   top = textGrob("Bivariate Analysis, Discrete Predictors",
                  gp = gpar(fontsize = 20, font = 2)))
+
+ggsave("bv_disc.png", plot = bv_disc)
+```
+
+### Export data
+```{r}
+saveRDS(ts_cohort, "ts_cohort_analysis")
 ```

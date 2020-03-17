@@ -7,6 +7,11 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggplot2)
+library(ggthemes)
+
+theme_set(theme_stata())
 ```
 
 ## Analysis
@@ -57,3 +62,76 @@ Overall the linear model doesn't perform very well for either the large (`model1
 
 ### Neural Network Regression
 
+```{r, include = F}
+library(keras)
+install_keras()
+library(caret)
+library(mltools)
+library(data.table)
+```
+
+### Create train and test sets
+
+```{r}
+preds = ts %>% select(hosp_time, seq_num, icu_los, hospital_expire_flag, age, ethnic_group, ever_married)
+
+fct_relevel(preds$ethnic_group, "WHITE") -> preds$ethnic_group
+
+preds %>% mutate(hospital_expire_flag = hospital_expire_flag, ever_married = as.numeric(ever_married)) -> preds
+
+preds_dummied = one_hot(data.table(na.omit(preds)), cols = c("ethnic_group"))
+
+trainIndex = createDataPartition(preds_dummied$hosp_time, p = 0.7, list = FALSE, times = 1)
+
+train = preds_dummied[trainIndex, ]
+test = preds_dummied[-trainIndex, ]
+
+train %>% select(-hosp_time) -> x_train
+train %>% select(hosp_time) -> y_train
+
+test %>% select(-hosp_time) -> x_test
+test %>% select(hosp_time) -> y_test
+
+train_sc = scale(x_train)
+col_means_train = attr(train_sc, "scaled:center")
+col_stddevs_train = attr(train_sc, "scaled:scale")
+test_sc = scale(x_test, center = col_means_train, scale = col_stddevs_train)
+
+dim(train_sc)
+dim(test_sc)
+```
+
+### Define simple multi-layer NN model
+
+```{r}
+model3 = keras_model_sequential()
+
+model3 %>%
+  layer_dense(units = 64, activation = "relu", input_shape = dim(train_sc)[2]) %>%
+  layer_dense(units = 64, activation = "relu") %>%
+  layer_dense(units = 1, activation = "linear")
+
+summary(model3)
+```
+
+```{r}
+model3 %>% compile(
+  loss = "mse",
+  optimizer = optimizer_rmsprop(),
+  metrics = c("mean_squared_error")
+)
+
+history = model3 %>% fit(as.matrix(train_sc), as.matrix(y_train),
+  epochs = 100, batch_size = 50,
+  validation_split = 0.2
+)
+```
+
+```{r}
+plot(history, metrics = "mean_squared_error", smooth = F) +
+  xlab("Epoch") +
+  ylab("Mean Squared Error") +
+  ggtitle("Neural Network Regression Scoring") +
+  theme(legend.title = element_blank(),
+        legend.text = element_text(c("Training", "Validation")))
+```

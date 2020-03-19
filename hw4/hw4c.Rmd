@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(ggplot2)
 library(ggthemes)
+library(jtools)
 
 theme_set(theme_stata())
 ```
@@ -22,9 +23,6 @@ We will run two types of models for this analysis - a linear regression (potenti
 
 ```{r}
 ts = readRDS("ts_cohort_analysis")
-```
-
-```{r}
 ts
 ```
 
@@ -43,17 +41,17 @@ Based on the graphics created previously, I am going to included the following p
 I choose not to include time in ER as it is likely highly correlated with time in ICU. While there may be concerns with reverse causation with regarsd to survival status, I am looking at this problem in a purely predictive sense and thus the fact that people certain to die have much shorter hospital stays compared to those who may survive is worth noting.
 
 ```{r}
-model1 = lm(hosp_time ~ seq_num + icu_los + factor(hospital_expire_flag) + age + factor(gender) + relevel(as.factor(ts$ethnic_group), ref = "WHITE") + factor(ever_married), data = ts)
-summary(model1)
+linear1 = lm(hosp_time ~ seq_num + icu_los + factor(hospital_expire_flag) + age + factor(gender) + relevel(as.factor(ts$ethnic_group), ref = "WHITE") + factor(ever_married), data = ts)
+summ(linear1)
 #RMSE
-sqrt(c(crossprod(model1$residuals))/length(model1$residuals))
+sqrt(c(crossprod(linear1$residuals))/length(linear1$residuals))
 ```
 
 ```{r}
-model2 = lm(hosp_time ~ seq_num + icu_los + factor(hospital_expire_flag), data = ts)
-summary(model2)
+linear2 = lm(hosp_time ~ seq_num + icu_los + factor(hospital_expire_flag), data = ts)
+summ(linear2)
 #RMSE
-sqrt(c(crossprod(model2$residuals))/length(model2$residuals))
+sqrt(c(crossprod(linear2$residuals))/length(linear2$residuals))
 ```
 
 Overall the linear model doesn't perform very well for either the large (`model1`) or small (`model2`) models. The most likely reason for this is that motor vehicle accidents are linked to a large variety of trauma-type injuries of different severity; we can see that demographic factors do not factor strongly into either model. It is worth noting that the diagnosis priority had a statistically significant positive regression coefficient, suggesting that multiple complications from a vehicular accident (and thus a lower priority for the diagnosis of the vehicle accident itself) increases length of hospital stay.
@@ -64,7 +62,6 @@ Overall the linear model doesn't perform very well for either the large (`model1
 
 ```{r, include = F}
 library(keras)
-install_keras()
 library(caret)
 library(mltools)
 library(data.table)
@@ -128,14 +125,16 @@ history = model3 %>% fit(as.matrix(train_sc), as.matrix(y_train),
 ```
 
 ```{r}
-plot(history)
-
-plot(history, metrics = "mean_squared_error", smooth = F) +
+nnr = plot(history, metrics = "mean_squared_error", smooth = F) +
   xlab("Epoch") +
   ylab("Mean Squared Error") +
   ggtitle("Neural Network Regression Scoring") +
   theme(legend.title = element_blank(),
         legend.text = element_text(c("Training", "Validation")))
+
+nnr
+
+ggsave("nnr.png", plot = nnr)
 ```
 
 Comparing the RMSE of neural network regression, the training set performs about the same as the standard linear modell; the validation set has a better outcome.

@@ -25,7 +25,7 @@ library(diagram)
 ### Flowchart
 
 ```{r}
-png(filename = "flowchart.png")
+png(filename = "images/flowchart.png")
 par(mfrow = c(1, 1))
 par(mar = c(0, 0, 0, 0))
 
@@ -43,10 +43,11 @@ box_pos[4,] = c(0.20, vert_pos[4])
 
 # content of boxes
 box_content <- matrix(nrow = num_of_boxes, ncol = 1, data = 0)
-box_content[1] = "All patients in MIMIC-III \n n = 58,976" # 1st box
-box_content[2] = "Exclude patients not first admitted to TSICU \n n = 52,664 " # 2nd box
-box_content[3] = "Exclude patients not involved in motor vehicle accidents \n n = 5,081" # 3rd box
-box_content[4] = "Study cohort \n n = 1,231"
+box_content[1] = "All patients in MIMIC-III \n n = 58,976" 
+box_content[2] = "Exclude patients not first admitted to TSICU \n n = 52,664 " 
+box_content[3] = 
+  "Exclude patients not involved in \n motor vehicle accidents \n n = 5,081 " 
+box_content[4] = "Study cohort \n n = 1,231 "
 
 # size of boxes
 box_x = c(0.25, 0.3, 0.3, 0.25)
@@ -152,7 +153,8 @@ ggsave("cvars.png", plot = cvars)
 
 ```{r}
 d1 = ts_cohort %>% ggplot() +
-  geom_bar(aes(factor(hospital_expire_flag), ..prop.., group = 1), fill = "dodgerblue4") +
+  geom_bar(aes(factor(hospital_expire_flag), ..prop.., group = 1), 
+           fill = "dodgerblue4") +
   xlab("Survival Status")
   ylab("Proportion") +
   scale_x_discrete(labels = c("Survived", "Died")) +

@@ -56,6 +56,8 @@ tbl(con, "transfers") %>%
   select(subject_id, hadm_id) %>%
   distinct() %>%
   print() -> ts_admits
+
+ts_admits %>% as_tibble()
 ```
 
 Now we want to restrict to patients who were involved in motor vehicle accidents. Let's find ICD codes containing **motor vehicle**:

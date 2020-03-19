@@ -1,0 +1,208 @@
+---
+title: "HW4 - Exploratory Data Analysis"
+author: "George Dewey"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+In Homework 2, I noted that there was a noticeable spike in the age distribution of TSICU patients between the ages of 19-25, which I attributed to motor vehicle accidents. The TSICU serves patients with severe traumatic injury, respiratory failure as a consequence of major trauma, systemic organ failure, and critical illness post-surgery. (citation: [here](https://www.ccm.pitt.edu/content/upmc-presbyterian-surgical-trauma-icu)).  In this analysis, I will explore factors contributing to length of stay among TSICU patients who were involved in motor vehicle accidents.
+
+Length of hospital stay (in days) will be the primary dependent variable for this analysis. 
+
+## Exploratory Data Analysis
+
+### Connect to PostgresSQL database
+
+#### Load database libraries and the tidyverse frontend
+
+```{r, include = FALSE}
+library(DBI)
+library(RPostgreSQL)
+library(tidyverse)
+library(lubridate)
+```
+
+### Provide connection information
+
+```{r}
+# Load configuration settings
+dbdriver <- 'PostgreSQL'
+user  <- 'postgres'
+password <- 'postgres'
+dbname <- 'mimic'
+schema <- 'mimiciii'
+
+# Connect to the database using the configuration settings
+con <- dbConnect(RPostgreSQL::PostgreSQL(), 
+                 dbname = dbname,
+                 user = user, 
+                 password = password)
+# Set the default schema
+dbExecute(con, paste("SET search_path TO ", schema, sep = " "))
+con
+```
+
+## Query and subsetting
+
+Using the tables `patients`, `icustays`, and `d_icd_diagnoses` we create a cohort of only patients who were first admitted to the TSICU.
+
+```{r}
+tbl(con, "transfers") %>%
+  select(subject_id, hadm_id, prev_careunit, curr_careunit) %>%
+  filter(is.na(prev_careunit) & curr_careunit == "TSICU") %>%
+  select(subject_id, hadm_id) %>%
+  distinct() %>%
+  print() -> ts_admits
+
+ts_admits %>% as_tibble()
+```
+
+Now we want to restrict to patients who were involved in motor vehicle accidents. Let's find ICD codes containing **motor vehicle**:
+
+```{r}
+tbl(con, "d_icd_diagnoses") %>%
+  filter(str_detect(tolower(long_title), "motor vehicle")) %>%
+  print()
+```
+
+There are over 150 ICD codes involving motor vehicle accidents. On closer inspection, we can see that there are some major categories - about 60 are for non-traffic accidents, while some are sequelae of motor vehicle accidents (for example, *E9520* - Suicide and self-inflicted poisoning by motor vehicle gas). I will restrict the cohort only to patients involved in accidents involving a vehicle directly (either traffic or non-traffic). This should include all vehicle types (bicycle, motorcycle, even animal riders).
+
+```{r}
+tbl(con, "d_icd_diagnoses") %>%
+  filter(str_detect(tolower(long_title), "traffic accident")) %>%
+  select(icd9_code, long_title) %>%
+  print() -> mv_codes
+```
+
+The table `diagnoses_icd` stores the diagnosis for each admission. We use `semi_join()` to keep the rows in `diagnoses_icd` that match the ICD-9 codes we found before:
+
+```{r}
+tbl(con, "diagnoses_icd") %>%
+  semi_join(mv_codes, by = "icd9_code") %>%
+  print() -> mv_admits
+```
+
+Dr. Zhou previously found that the field `seq_num` represents the priority ranking for the reason for admission. Since motor vehicle accidents may indicate an broad indicator of reason for admission, I will expand the range of `seq_num` to be included in the cohort to 1-10 (compared to the 1-5 range for the example analysis of myocardial infarction). 
+
+```{r}
+mv_admits %>%
+  filter(seq_num <= 10) %>%
+  group_by(subject_id, hadm_id) %>%
+  filter(min_rank(seq_num) <= 1) %>%
+  ungroup() %>%
+  select(subject_id, hadm_id, icd9_code, seq_num) %>%
+  print() -> mv_admits
+```
+
+Now we `inner_join` the table of admissions to CCU and the table of admissions that include our specific vehicle accident-related diagnoses.
+
+```{r}
+ts_admits %>%
+  inner_join(mv_admits, by = c("subject_id", "hadm_id")) %>%
+  print() -> ts_cohort
+
+ts_cohort %>% as_tibble() -> ts_cohort
+```
+
+From the `admissions` table, obtain `admittime` and `dischtime` times for each patient so we can calculate length of hospital stay. We can also obtain the length of each ICU stay from the `icustays` table.
+
+```{r}  
+tbl(con, "admissions") %>% 
+  select(subject_id, hadm_id, admittime, dischtime, hospital_expire_flag, 
+         edregtime, edouttime) %>%
+  as_tibble -> admits
+          
+tbl(con, "patients") %>% select(subject_id, dob, dod) %>% as_tibble() -> pts
+
+tbl(con, "icustays") %>% select(subject_id, hadm_id, los) %>% as_tibble -> icu
+
+ts_cohort %>% left_join(pts, by = "subject_id") %>% 
+  left_join(icu, by = c("subject_id", "hadm_id")) %>%
+  left_join(admits, by = c("subject_id", "hadm_id")) -> ts_cohort
+
+ts_cohort %>% rename(icu_los = los) -> ts_cohort
+```
+
+Now that we have some time-based information, let's calculate some summary variables:
+
+  1) Calculate `age` by subtracting the date of birth (`dob`) from the time of admission (`admittime`).
+  2) Calculate time in the emergency room `ed_time` by subtracting `edregtime` from `edouttime`.
+  3) Calculate time in hospital `hosp_time` by subtracting `admittime` from the time of discharge (`dischtime`).
+  
+Once we have these columns, we can drop the component variables.
+
+Additionally, from Project 2, remember that patients with ages $\ge$ 90 had their ages masked. For simplicity's sake, let's remove patients aged 90 and over from the cohort.
+
+```{r}
+ts_cohort %>%
+  mutate(age = as.numeric(admittime - dob, "weeks") / 52.25) %>%
+  mutate(ed_time = as.numeric(edouttime - edregtime, "days")) %>%
+  mutate(hosp_time = as.numeric(dischtime - admittime, "days")) %>%
+  select(-c(admittime, dischtime, edregtime, edouttime, dob, dod)) %>%
+  filter(age < 90) -> ts_cohort
+```
+
+From the `admissions` and `patients` tables, we can grab some demographics:
+
+```{r}
+tbl(con, "admissions") %>%
+  select(subject_id, ethnicity, marital_status) %>%
+  distinct() %>%
+  print() -> study_subjects
+```
+```{r}
+tbl(con, "patients") %>%
+  select(subject_id, gender) %>%
+  distinct() %>%
+  full_join(study_subjects, by = "subject_id") %>%
+  print() -> study_subjects
+```
+
+```{r}
+study_subjects %>% as_tibble -> subjects
+
+(ts_cohort %>% left_join(subjects, by = "subject_id") -> ts_cohort)
+```
+
+We can use Dr. Zhou's example code to collapse ethnicity values and remove unknown/nulls:
+
+```{r}
+unknown_ethnicity <- c(
+  "OTHER",
+  "UNABLE TO OBTAIN",
+  "UNKNOWN/NOT SPECIFIED",
+  "MULTI RACE ETHNICITY",
+  "PATIENT DECLINED TO ANSWER",
+  "UNKNOWN"
+)
+
+ts_cohort %>% mutate(ethnic_group = case_when(
+    str_detect(ethnicity, "^ASIAN") ~ "ASIAN",
+    str_detect(ethnicity, "^BLACK") ~ "BLACK",
+    str_detect(ethnicity, "^HISPANIC") ~ "HISPANIC",
+    str_detect(ethnicity, "^WHITE") ~ "WHITE",
+    ethnicity %in% unknown_ethnicity ~ NA_character_,
+    TRUE ~ NA_character_
+  )) %>% select(-ethnicity) -> ts_cohort
+
+ts_cohort
+```
+
+Our cohort of motor vehicle accident victims is quite small (could be detrimental to a heavily stratified analysis but is a good sign for public health).
+
+## Close the connection to a database
+
+Close the connection:
+```{r}
+dbDisconnect(con)
+```
+
+## Export to RDS for use in visualization and analysis
+
+```{r}
+saveRDS(ts_cohort, "ts_cohort")
+```
+

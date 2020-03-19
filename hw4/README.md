@@ -42,6 +42,9 @@ Results of model fitting are shown below:
 
 Two linear models were fit: a large model containing most relevant predictors, and a small model containing only predictors that were found to be statistically significant in the large model.
 
+![Large model](https://github.com/gd32/biostat-203b-2020-winter/blob/master/hw4/images/lm_longer.png)
+
+![Small model](https://github.com/gd32/biostat-203b-2020-winter/blob/master/hw4/images/lm_shorter.png)
 
 ### Neural Network Regression
 
@@ -49,13 +52,13 @@ A single hidden layer of 64 nodes was included in the neural network. Results ar
 
 ![Neural net](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/nnr.png)
 
-The neural network regression performed slightly better than the reduced linear model. While the performance gain was minimal, it is possible that increasing the number of hidden layers woudl improve model performance.
+The neural network regression performed slightly better than the reduced linear model. While the performance gain was minimal, it is possible that increasing the number of hidden layers would improve model performance.
 
 ## Conclusion
 
+Neither model type performed optimally; however, we saw that the primary factors affecting length of stay among our chosen covariates were diagnosis priority, length of ICU stay, and survival status. It makes sense that patients who have potential to recover would remain in the hospital longer for rehabilitation or preventive measures; those who are at higher risk of death have much shorter stays (likely to due to increased severity of traumatic injury). Further optimization of the models is warranted, as inclusion of specific injury types that are associated with TSICU admission as well as with severity of injury could drastically affect performance. For example, patients with broken bones or similar injury could have noticeably different length of stay when compared to those with soft tissue or head injury.
 
-
-References
+## References
 
 1. MIMIC-III, a freely accessible critical care database. Johnson AEW, Pollard TJ, Shen L, Lehman L, Feng M, Ghassemi M, Moody B, Szolovits P, Celi LA, and Mark RG. Scientific Data (2016). DOI: 10.1038/sdata.2016.35. Available from: http://www.nature.com/articles/sdata201635
 

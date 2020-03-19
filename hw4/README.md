@@ -6,7 +6,7 @@ MIMIC is an open-access dataset developed by the MIT Lab for Computational Physi
 
 ## Data preparation
 
-Detailed data management and manipulation code can be found in [hw4a.Rmd](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/hw4a.Rmd). The following CONSORT flow diagram visually describes the process:
+Detailed data management and manipulation code can be found in [hw4a.Rmd](https://github.com/gd32/biostat-203b-2020-winter/blob/master/hw4/hw4a.Rmd). The following CONSORT flow diagram visually describes the process:
 
 ![Flowchart](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/flowchart.png)
 
@@ -18,11 +18,15 @@ Univariate and bivariate analyses for each predictor were performed to gauge mod
 
 ### Univariate Analysis
 
+A majority of patients survived their time in the TSICU; over 60% were male, 35% were ever married, and over 60% were white. The diagnosis priority for the motor vehicle accident leading to the ICU stay on average was between 4 to 6. The age distribution heavily favored individuals between 15 to 30 years old. In regards to length of ICU stay and time spent in the emergency room, both distributions were heavily skewed. Median length of ICU stay was less than 3 days and the median time in the emergency room was about 2.5 hours.
+
 ![Discrete variables](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/dvars.png)
 
 ![Continuous variables](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/cvars.png)
 
 ### Bivariate Analysis
+
+Bivariate analysis showed a noticeable difference in length of stay between those who survived their ICU stay and those who died as well as in different groups of diagnosis priority; there was little correlation between the other chosen predictors.
 
 ![Bivariate discrete](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/bv_disc.png)
 
@@ -38,60 +42,18 @@ Results of model fitting are shown below:
 
 Two linear models were fit: a large model containing most relevant predictors, and a small model containing only predictors that were found to be statistically significant in the large model.
 
-MODEL INFO:
-Observations: 825 (406 missing obs. deleted)
-Dependent Variable: hosp_time
-Type: OLS linear regression 
-
-MODEL FIT:
-F(9,815) = 50.41, p = 0.00
-R² = 0.36
-Adj. R² = 0.35 
-
-Standard errors: OLS
-----------------------------------------------------------------------
-                                           Est.   S.E.   t val.      p
---------------------------------------- ------- ------ -------- ------
-(Intercept)                                1.83   1.12     1.64   0.10
-seq_num                                    0.74   0.13     5.49   0.00
-icu_los                                    1.08   0.06    17.76   0.00
-factor(hospital_expire_flag)1             -6.31   1.79    -3.53   0.00
-age                                        0.00   0.02     0.06   0.96
-factor(gender)M                            0.17   0.62     0.28   0.78
-relevel(as.factor(ts$ethnic_group),       -1.71   2.05    -0.83   0.40
-ref = "WHITE")ASIAN                                                   
-relevel(as.factor(ts$ethnic_group),        1.77   1.34     1.32   0.19
-ref = "WHITE")BLACK                                                   
-relevel(as.factor(ts$ethnic_group),        1.23   1.10     1.12   0.26
-ref = "WHITE")HISPANIC                                                
-factor(ever_married)TRUE                  -0.67   0.71    -0.95   0.34
-----------------------------------------------------------------------
-
-MODEL INFO:
-Observations: 1231
-Dependent Variable: hosp_time
-Type: OLS linear regression 
-
-MODEL FIT:
-F(3,1227) = 271.21, p = 0.00
-R² = 0.40
-Adj. R² = 0.40 
-
-Standard errors: OLS
-------------------------------------------------------------------
-                                       Est.   S.E.   t val.      p
------------------------------------ ------- ------ -------- ------
-(Intercept)                            1.78   0.62     2.88   0.00
-seq_num                                0.75   0.10     7.18   0.00
-icu_los                                1.06   0.05    23.41   0.00
-factor(hospital_expire_flag)1         -6.91   0.89    -7.80   0.00
-------------------------------------------------------------------
 
 ### Neural Network Regression
 
 A single hidden layer of 64 nodes was included in the neural network. Results are shown below:
 
 ![Neural net](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/nnr.png)
+
+The neural network regression performed slightly better than the reduced linear model. While the performance gain was minimal, it is possible that increasing the number of hidden layers woudl improve model performance.
+
+## Conclusion
+
+
 
 References
 

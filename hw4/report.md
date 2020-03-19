@@ -6,9 +6,9 @@ MIMIC is an open-access dataset developed by the MIT Lab for Computational Physi
 
 ## Data preparation
 
-Detailed data management and manipulation code can be found in [hw4a.Rmd][link here]. The following CONSORT flow diagram visually describes the process:
+Detailed data management and manipulation code can be found in [hw4a.Rmd](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/hw4a.Rmd). The following CONSORT flow diagram visually describes the process:
 
-!(./flowchart.png "CONSORT Flow Diagram")
+!(https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/flowchart.png)
 
 ---
 

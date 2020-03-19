@@ -2,13 +2,13 @@
 
 ## Introduction
 
-MIMIC is an open-access dataset developed by the MIT Lab for Computational Physiology which contains data for over 60,000 intensive care unit admissions at Beth Israel Deaconess Medical Center in Boston, MA [1](http://www.nature.com/articles/sdata201635). The dataset has wide-ranging applications in biostatistics, epidemiology, and computational medicine. In Homework 2, I noted that there was a noticeable spike in the age distribution of TSICU patients between the ages of 19-25, which I attributed to motor vehicle accidents. The TSICU serves patients with severe traumatic injury, respiratory failure as a consequence of major trauma, systemic organ failure, and critical illness post-surgery. [2](https://www.ccm.pitt.edu/content/upmc-presbyterian-surgical-trauma-icu).  In this analysis, I explore factors contributing to length of stay among TSICU patients who were involved in motor vehicle accidents. Data was manipulated through a PostgreSQL database and using R version 3.6.0 running on RStudio version 1.2.5033. Two types of analytic models were built: a linear regression model and a neural network regression model.
+MIMIC is an open-access dataset developed by the MIT Lab for Computational Physiology which contains data for over 60,000 intensive care unit admissions at Beth Israel Deaconess Medical Center in Boston, MA <sup>[1](http://www.nature.com/articles/sdata201635)</sup> The dataset has wide-ranging applications in biostatistics, epidemiology, and computational medicine. In Homework 2, I noted that there was a noticeable spike in the age distribution of TSICU patients between the ages of 19-25, which I attributed to motor vehicle accidents. The TSICU serves patients with severe traumatic injury, respiratory failure as a consequence of major trauma, systemic organ failure, and critical illness post-surgery. <sup>[2](https://www.ccm.pitt.edu/content/upmc-presbyterian-surgical-trauma-icu)</sup>  In this analysis, I explore factors contributing to length of stay among TSICU patients who were involved in motor vehicle accidents. Data was manipulated through a PostgreSQL database and using R version 3.6.0 running on RStudio version 1.2.5033. Two types of analytic models were built: a linear regression model and a neural network regression model.
 
 ## Data preparation
 
 Detailed data management and manipulation code can be found in [hw4a.Rmd][link here]. The following CONSORT flow diagram visually describes the process:
 
-!(flowchart.png "CONSORT Flow Diagram")
+!(./flowchart.png "CONSORT Flow Diagram")
 
 ---
 

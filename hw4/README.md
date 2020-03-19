@@ -8,7 +8,7 @@ MIMIC is an open-access dataset developed by the MIT Lab for Computational Physi
 
 Detailed data management and manipulation code can be found in [hw4a.Rmd](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/hw4a.Rmd). The following CONSORT flow diagram visually describes the process:
 
-!(https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/flowchart.png)
+![Flowchart](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/flowchart.png)
 
 ---
 
@@ -18,15 +18,15 @@ Univariate and bivariate analyses for each predictor were performed to gauge mod
 
 ### Univariate Analysis
 
-!(dvars.png)
+![Discrete variables](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/dvars.png)
 
-!(cvars.png)
+![Continuous variables](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/cvars.png)
 
 ### Bivariate Analysis
 
-!(bv_disc.png)
+![Bivariate discrete](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/bv_disc.png)
 
-!(bv_conts.png)
+![Bivariate continuous](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/bv_conts.png)
 
 ---
 
@@ -91,7 +91,7 @@ factor(hospital_expire_flag)1         -6.91   0.89    -7.80   0.00
 
 A single hidden layer of 64 nodes was included in the neural network. Results are shown below:
 
-!(nnr.png)
+![Neural net](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/nnr.png)
 
 References
 

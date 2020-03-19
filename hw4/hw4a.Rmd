@@ -8,11 +8,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Factors Affecting Length of Stay in Trauma Surgical ICU (TSICU) patients involved in Motor Vehicle Accidents
-
----
-
-In Homework 2, I noted that there was a noticeable spike in the age distribution of TSICU patients between the ages of 19-25, which I attributed to motor vehicle accidents. The TSICU serves patients with severe traumatic injury, respiratory failure as a consequence of major trauma, systemic organ failure, and critical illness post-surgery. (citation: [link](https://www.ccm.pitt.edu/content/upmc-presbyterian-surgical-trauma-icu)).  In this analysis, I will explore factors contributing to length of stay among TSICU patients who were involved in motor vehicle accidents.
+In Homework 2, I noted that there was a noticeable spike in the age distribution of TSICU patients between the ages of 19-25, which I attributed to motor vehicle accidents. The TSICU serves patients with severe traumatic injury, respiratory failure as a consequence of major trauma, systemic organ failure, and critical illness post-surgery. (citation: [here](https://www.ccm.pitt.edu/content/upmc-presbyterian-surgical-trauma-icu)).  In this analysis, I will explore factors contributing to length of stay among TSICU patients who were involved in motor vehicle accidents.
 
 Length of hospital stay (in days) will be the primary dependent variable for this analysis. 
 
@@ -70,7 +66,7 @@ tbl(con, "d_icd_diagnoses") %>%
   print()
 ```
 
-There are over 150 ICD codes involving motor vehicle accidents. On closer inspection, we can see that there are some major categories - about 60 are for non-traffic accidents, while some are sequelae of motor vehicle accidents (for example, E9520 - Suicide and self-inflicted poisoning by motor vehicle gas). I will restrict the cohort only to patients involved in accidents involving a vehicle directly (either traffic or non-traffic). This should include all vehicle types (bicycle, motorcycle, even animal riders).
+There are over 150 ICD codes involving motor vehicle accidents. On closer inspection, we can see that there are some major categories - about 60 are for non-traffic accidents, while some are sequelae of motor vehicle accidents (for example, *E9520* - Suicide and self-inflicted poisoning by motor vehicle gas). I will restrict the cohort only to patients involved in accidents involving a vehicle directly (either traffic or non-traffic). This should include all vehicle types (bicycle, motorcycle, even animal riders).
 
 ```{r}
 tbl(con, "d_icd_diagnoses") %>%
@@ -82,21 +78,12 @@ tbl(con, "d_icd_diagnoses") %>%
 The table `diagnoses_icd` stores the diagnosis for each admission. We use `semi_join()` to keep the rows in `diagnoses_icd` that match the ICD-9 codes we found before:
 
 ```{r}
-tbl(con, "d_icd_diagnoses") %>%
-  filter(str_detect(tolower(long_title), "traffic accident")) %>%
-  select(icd9_code, long_title) %>%
-  print() -> icd_codes
-```
-
-The table `diagnoses_icd` stores the diagnosis for each admission. We use `semi_join()` to keep the rows in `diagnoses_icd` that match the ICD-9 codes related to heart attack:
-
-```{r}
 tbl(con, "diagnoses_icd") %>%
   semi_join(mv_codes, by = "icd9_code") %>%
   print() -> mv_admits
 ```
 
-Dr. Zhou previously found that the field `seq_num` represents the priority ranking for the reason for admission. Since motor vehicle accidents may indicate an broad indicator of reason for admission, I will expand the range of `seq_num` to be included in the cohort to 1-10 (compared to the 1-5 range for the example analysis of myocardial infarction).
+Dr. Zhou previously found that the field `seq_num` represents the priority ranking for the reason for admission. Since motor vehicle accidents may indicate an broad indicator of reason for admission, I will expand the range of `seq_num` to be included in the cohort to 1-10 (compared to the 1-5 range for the example analysis of myocardial infarction). 
 
 ```{r}
 mv_admits %>%
@@ -118,14 +105,7 @@ ts_admits %>%
 ts_cohort %>% as_tibble() -> ts_cohort
 ```
 
-```{r}
-head(ts_cohort)
-dim(ts_cohort)
-```
-
-Our cohort of motor vehicle accident victims is quite small (could be detrimental to a heavily stratified analysis but is a good sign for public health).
-
-From the `admissions` table, obtain the in and out times for each patient so we can calculate length of hospital stay. We can also obtain the length of each ICU stay from the `icustays` table.
+From the `admissions` table, obtain `admittime` and `dischtime` times for each patient so we can calculate length of hospital stay. We can also obtain the length of each ICU stay from the `icustays` table.
 
 ```{r}  
 tbl(con, "admissions") %>% 
@@ -209,6 +189,8 @@ ts_cohort %>% mutate(ethnic_group = case_when(
 ts_cohort
 ```
 
+Our cohort of motor vehicle accident victims is quite small (could be detrimental to a heavily stratified analysis but is a good sign for public health).
+
 ## Close the connection to a database
 
 Close the connection:
@@ -216,7 +198,7 @@ Close the connection:
 dbDisconnect(con)
 ```
 
-## Export to RDS for use in analysis
+## Export to RDS for use in visualization and analysis
 
 ```{r}
 saveRDS(ts_cohort, "ts_cohort")

@@ -368,10 +368,7 @@ summary {
 </div>
 
 
-<div id="factors-affecting-length-of-stay-in-trauma-surgical-icu-tsicu-patients-involved-in-motor-vehicle-accidents" class="section level1">
-<h1>Factors Affecting Length of Stay in Trauma Surgical ICU (TSICU) patients involved in Motor Vehicle Accidents</h1>
-<hr />
-<p>In Homework 2, I noted that there was a noticeable spike in the age distribution of TSICU patients between the ages of 19-25, which I attributed to motor vehicle accidents. The TSICU serves patients with severe traumatic injury, respiratory failure as a consequence of major trauma, systemic organ failure, and critical illness post-surgery. (citation: <a href="https://www.ccm.pitt.edu/content/upmc-presbyterian-surgical-trauma-icu">link</a>). In this analysis, I will explore factors contributing to length of stay among TSICU patients who were involved in motor vehicle accidents.</p>
+<p>In Homework 2, I noted that there was a noticeable spike in the age distribution of TSICU patients between the ages of 19-25, which I attributed to motor vehicle accidents. The TSICU serves patients with severe traumatic injury, respiratory failure as a consequence of major trauma, systemic organ failure, and critical illness post-surgery. (citation: <a href="https://www.ccm.pitt.edu/content/upmc-presbyterian-surgical-trauma-icu">here</a>). In this analysis, I will explore factors contributing to length of stay among TSICU patients who were involved in motor vehicle accidents.</p>
 <p>Length of hospital stay (in days) will be the primary dependent variable for this analysis.</p>
 <div id="exploratory-data-analysis" class="section level2">
 <h2>Exploratory Data Analysis</h2>
@@ -445,7 +442,7 @@ dbExecute(con, paste(&quot;SET search_path TO &quot;, schema, sep = &quot; &quot
 ##  9  12740 E8221     Oth coll w mov ob… Other motor vehicle nontraffic accident …
 ## 10  12741 E8222     Oth coll mov obj-… Other motor vehicle nontraffic accident …
 ## # … with more rows</code></pre>
-<p>There are over 150 ICD codes involving motor vehicle accidents. On closer inspection, we can see that there are some major categories - about 60 are for non-traffic accidents, while some are sequelae of motor vehicle accidents (for example, E9520 - Suicide and self-inflicted poisoning by motor vehicle gas). I will restrict the cohort only to patients involved in accidents involving a vehicle directly (either traffic or non-traffic). This should include all vehicle types (bicycle, motorcycle, even animal riders).</p>
+<p>There are over 150 ICD codes involving motor vehicle accidents. On closer inspection, we can see that there are some major categories - about 60 are for non-traffic accidents, while some are sequelae of motor vehicle accidents (for example, <em>E9520</em> - Suicide and self-inflicted poisoning by motor vehicle gas). I will restrict the cohort only to patients involved in accidents involving a vehicle directly (either traffic or non-traffic). This should include all vehicle types (bicycle, motorcycle, even animal riders).</p>
 <pre class="r"><code>tbl(con, &quot;d_icd_diagnoses&quot;) %&gt;%
   filter(str_detect(tolower(long_title), &quot;traffic accident&quot;)) %&gt;%
   select(icd9_code, long_title) %&gt;%
@@ -466,26 +463,6 @@ dbExecute(con, paste(&quot;SET search_path TO &quot;, schema, sep = &quot; &quot
 ## 10 E8222     Other motor vehicle nontraffic accident involving collision with m…
 ## # … with more rows</code></pre>
 <p>The table <code>diagnoses_icd</code> stores the diagnosis for each admission. We use <code>semi_join()</code> to keep the rows in <code>diagnoses_icd</code> that match the ICD-9 codes we found before:</p>
-<pre class="r"><code>tbl(con, &quot;d_icd_diagnoses&quot;) %&gt;%
-  filter(str_detect(tolower(long_title), &quot;traffic accident&quot;)) %&gt;%
-  select(icd9_code, long_title) %&gt;%
-  print() -&gt; icd_codes</code></pre>
-<pre><code>## # Source:   lazy query [?? x 2]
-## # Database: postgres 11.0.7 [postgres@/var/run/postgresql:5432/mimic]
-##    icd9_code long_title                                                         
-##    &lt;chr&gt;     &lt;chr&gt;                                                              
-##  1 E8213     Nontraffic accident involving other off-road motor vehicle injurin…
-##  2 E8214     Nontraffic accident involving other off-road motor vehicle injurin…
-##  3 E8215     Nontraffic accident involving other off-road motor vehicle injurin…
-##  4 E8216     Nontraffic accident involving other off-road motor vehicle injurin…
-##  5 E8217     Nontraffic accident involving other off-road motor vehicle injurin…
-##  6 E8218     Nontraffic accident involving other off-road motor vehicle injurin…
-##  7 E8219     Nontraffic accident involving other off-road motor vehicle injurin…
-##  8 E8220     Other motor vehicle nontraffic accident involving collision with m…
-##  9 E8221     Other motor vehicle nontraffic accident involving collision with m…
-## 10 E8222     Other motor vehicle nontraffic accident involving collision with m…
-## # … with more rows</code></pre>
-<p>The table <code>diagnoses_icd</code> stores the diagnosis for each admission. We use <code>semi_join()</code> to keep the rows in <code>diagnoses_icd</code> that match the ICD-9 codes related to heart attack:</p>
 <pre class="r"><code>tbl(con, &quot;diagnoses_icd&quot;) %&gt;%
   semi_join(mv_codes, by = &quot;icd9_code&quot;) %&gt;%
   print() -&gt; mv_admits</code></pre>
@@ -553,20 +530,7 @@ dbExecute(con, paste(&quot;SET search_path TO &quot;, schema, sep = &quot; &quot
 ## 10        397  114149 E8150           3
 ## # … with more rows</code></pre>
 <pre class="r"><code>ts_cohort %&gt;% as_tibble() -&gt; ts_cohort</code></pre>
-<pre class="r"><code>head(ts_cohort)</code></pre>
-<pre><code>## # A tibble: 6 x 4
-##   subject_id hadm_id icd9_code seq_num
-##        &lt;int&gt;   &lt;int&gt; &lt;chr&gt;       &lt;int&gt;
-## 1         43  146828 E8210           3
-## 2         45  157907 E8122           7
-## 3         65  143430 E8147           4
-## 4        147  103631 E8120           5
-## 5        183  113341 E8120           3
-## 6        200  186970 E8217           8</code></pre>
-<pre class="r"><code>dim(ts_cohort)</code></pre>
-<pre><code>## [1] 1197    4</code></pre>
-<p>Our cohort of motor vehicle accident victims is quite small (could be detrimental to a heavily stratified analysis but is a good sign for public health).</p>
-<p>From the <code>admissions</code> table, obtain the in and out times for each patient so we can calculate length of hospital stay. We can also obtain the length of each ICU stay from the <code>icustays</code> table.</p>
+<p>From the <code>admissions</code> table, obtain <code>admittime</code> and <code>dischtime</code> times for each patient so we can calculate length of hospital stay. We can also obtain the length of each ICU stay from the <code>icustays</code> table.</p>
 <pre class="r"><code>tbl(con, &quot;admissions&quot;) %&gt;% 
   select(subject_id, hadm_id, admittime, dischtime, hospital_expire_flag, 
          edregtime, edouttime) %&gt;%
@@ -688,6 +652,7 @@ ts_cohort</code></pre>
 ## 10        397  114149 E8150           3   3.82                 0  19.9  0.176 
 ## # … with 1,221 more rows, and 4 more variables: hosp_time &lt;dbl&gt;, gender &lt;chr&gt;,
 ## #   marital_status &lt;chr&gt;, ethnic_group &lt;chr&gt;</code></pre>
+<p>Our cohort of motor vehicle accident victims is quite small (could be detrimental to a heavily stratified analysis but is a good sign for public health).</p>
 </div>
 <div id="close-the-connection-to-a-database" class="section level2">
 <h2>Close the connection to a database</h2>
@@ -695,10 +660,9 @@ ts_cohort</code></pre>
 <pre class="r"><code>dbDisconnect(con)</code></pre>
 <pre><code>## [1] TRUE</code></pre>
 </div>
-<div id="export-to-rds-for-use-in-analysis" class="section level2">
-<h2>Export to RDS for use in analysis</h2>
+<div id="export-to-rds-for-use-in-visualization-and-analysis" class="section level2">
+<h2>Export to RDS for use in visualization and analysis</h2>
 <pre class="r"><code>saveRDS(ts_cohort, &quot;ts_cohort&quot;)</code></pre>
-</div>
 </div>
 
 

@@ -46,14 +46,14 @@ I choose not to include time in ER as it is likely highly correlated with time i
 model1 = lm(hosp_time ~ seq_num + icu_los + factor(hospital_expire_flag) + age + factor(gender) + relevel(as.factor(ts$ethnic_group), ref = "WHITE") + factor(ever_married), data = ts)
 summary(model1)
 #RMSE
-c(crossprod(model1$residuals))/length(model1$residuals)
+sqrt(c(crossprod(model1$residuals))/length(model1$residuals))
 ```
 
 ```{r}
 model2 = lm(hosp_time ~ seq_num + icu_los + factor(hospital_expire_flag), data = ts)
 summary(model2)
 #RMSE
-c(crossprod(model2$residuals))/length(model2$residuals)
+sqrt(c(crossprod(model2$residuals))/length(model2$residuals))
 ```
 
 Overall the linear model doesn't perform very well for either the large (`model1`) or small (`model2`) models. The most likely reason for this is that motor vehicle accidents are linked to a large variety of trauma-type injuries of different severity; we can see that demographic factors do not factor strongly into either model. It is worth noting that the diagnosis priority had a statistically significant positive regression coefficient, suggesting that multiple complications from a vehicular accident (and thus a lower priority for the diagnosis of the vehicle accident itself) increases length of hospital stay.
@@ -122,12 +122,14 @@ model3 %>% compile(
 )
 
 history = model3 %>% fit(as.matrix(train_sc), as.matrix(y_train),
-  epochs = 100, batch_size = 50,
+  epochs = 50, batch_size = 50,
   validation_split = 0.2
 )
 ```
 
 ```{r}
+plot(history)
+
 plot(history, metrics = "mean_squared_error", smooth = F) +
   xlab("Epoch") +
   ylab("Mean Squared Error") +
@@ -135,3 +137,5 @@ plot(history, metrics = "mean_squared_error", smooth = F) +
   theme(legend.title = element_blank(),
         legend.text = element_text(c("Training", "Validation")))
 ```
+
+Comparing the RMSE of neural network regression, the training set performs about the same as the standard linear modell; the validation set has a better outcome.

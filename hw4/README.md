@@ -2,7 +2,9 @@
 
 ## Introduction
 
-MIMIC is an open-access dataset developed by the MIT Lab for Computational Physiology which contains data for over 60,000 intensive care unit admissions at Beth Israel Deaconess Medical Center in Boston, MA <sup>[1](http://www.nature.com/articles/sdata201635)</sup> The dataset has wide-ranging applications in biostatistics, epidemiology, and computational medicine. In Homework 2, I noted that there was a noticeable spike in the age distribution of TSICU patients between the ages of 19-25, which I attributed to motor vehicle accidents. The TSICU serves patients with severe traumatic injury, respiratory failure as a consequence of major trauma, systemic organ failure, and critical illness post-surgery. <sup>[2](https://www.ccm.pitt.edu/content/upmc-presbyterian-surgical-trauma-icu)</sup>  In this analysis, I explore factors contributing to length of stay among TSICU patients who were involved in motor vehicle accidents. Data was manipulated through a PostgreSQL database and using R version 3.6.0 running on RStudio version 1.2.5033. Two types of analytic models were built: a linear regression model and a neural network regression model.
+MIMIC is an open-access dataset developed by the MIT Lab for Computational Physiology which contains data for over 60,000 intensive care unit admissions at Beth Israel Deaconess Medical Center in Boston, MA <sup>[1](http://www.nature.com/articles/sdata201635)</sup> The dataset has wide-ranging applications in biostatistics, epidemiology, and computational medicine. In Homework 2, I noted that there was a noticeable spike in the age distribution of TSICU patients between the ages of 19-25, which I attributed to motor vehicle accidents. The TSICU serves patients with severe traumatic injury, respiratory failure as a consequence of major trauma, systemic organ failure, and critical illness post-surgery. <sup>[2](https://www.ccm.pitt.edu/content/upmc-presbyterian-surgical-trauma-icu)</sup>  
+
+In this analysis, I explore factors contributing to length of stay among TSICU patients who were involved in motor vehicle accidents. Data was manipulated through a PostgreSQL database and using R version 3.6.0 running on RStudio version 1.2.5033. Two types of analytic models were built: a linear regression and a neural network regression.
 
 ## Data preparation
 
@@ -14,7 +16,7 @@ Detailed data management and manipulation code can be found in [hw4a.Rmd](https:
 
 ## Visualization
 
-Univariate and bivariate analyses for each predictor were performed to gauge model worthiness. The results are as follows:
+Univariate and bivariate analyses for each predictor were performed to gauge model worthiness. 
 
 ### Univariate Analysis
 
@@ -26,7 +28,7 @@ A majority of patients survived their time in the TSICU; over 60% were male, 35%
 
 ### Bivariate Analysis
 
-Bivariate analysis showed a noticeable difference in length of stay between those who survived their ICU stay and those who died as well as in different groups of diagnosis priority; there was little correlation between the other chosen predictors.
+Bivariate analysis showed a noticeable difference in length of stay between those who survived their ICU stay and those who died as well as for different groups of diagnosis priority; there was little correlation between the other chosen predictors and the outcome.
 
 ![Bivariate discrete](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/bv_disc.png)
 
@@ -36,7 +38,7 @@ Bivariate analysis showed a noticeable difference in length of stay between thos
 
 ## Analytics
 
-Results of model fitting are shown below:
+Results of model fitting are presented below.
 
 ### Linear Models
 
@@ -52,7 +54,7 @@ A single hidden layer of 64 nodes was included in the neural network. Results ar
 
 ![Neural net](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/nnr.png)
 
-The neural network regression performed slightly better than the reduced linear model. While the performance gain was minimal, it is possible that increasing the number of hidden layers would improve model performance.
+The neural network regression performed slightly better than the reduced linear model. While the performance gain was minimal, it is possible that increasing the number of hidden layers or nodes would improve model performance.
 
 ## Conclusion
 
@@ -62,5 +64,5 @@ Neither model type performed optimally; however, we saw that the primary factors
 
 1. MIMIC-III, a freely accessible critical care database. Johnson AEW, Pollard TJ, Shen L, Lehman L, Feng M, Ghassemi M, Moody B, Szolovits P, Celi LA, and Mark RG. Scientific Data (2016). DOI: 10.1038/sdata.2016.35. Available from: http://www.nature.com/articles/sdata201635
 
-2. https://www.ccm.pitt.edu/content/upmc-presbyterian-surgical-trauma-icu
+2. UPMC Presbyterian Surgical Trauma ICU. Department of Critical Care Medicine. https://www.ccm.pitt.edu/content/upmc-presbyterian-surgical-trauma-icu. Accessed March 21, 2020. 
 

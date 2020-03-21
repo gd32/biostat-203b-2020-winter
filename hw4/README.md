@@ -22,17 +22,17 @@ Univariate and bivariate analyses for each predictor were performed to gauge mod
 
 A majority of patients survived their time in the TSICU; over 60% were male, 35% were ever married, and over 60% were white. The diagnosis priority for the motor vehicle accident leading to the ICU stay on average was between 4 to 6. The age distribution heavily favored individuals between 15 to 30 years old. In regards to length of ICU stay and time spent in the emergency room, both distributions were heavily skewed. Median length of ICU stay was less than 3 days and the median time in the emergency room was about 2.5 hours.
 
-![Discrete variables](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/dvars.png)
+![Discrete variables](https://github.com/gd32/biostat-203b-2020-winter/blob/master/hw4/images/dvars.png)
 
-![Continuous variables](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/cvars.png)
+![Continuous variables](https://github.com/gd32/biostat-203b-2020-winter/blob/master/hw4/images/cvars.png)
 
 ### Bivariate Analysis
 
 Bivariate analysis showed a noticeable difference in length of stay between those who survived their ICU stay and those who died as well as for different groups of diagnosis priority; there was little correlation between the other chosen predictors and the outcome.
 
-![Bivariate discrete](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/bv_disc.png)
+![Bivariate discrete](https://github.com/gd32/biostat-203b-2020-winter/blob/master/hw4/images/bv_disc.png)
 
-![Bivariate continuous](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/bv_conts.png)
+![Bivariate continuous](https://github.com/gd32/biostat-203b-2020-winter/blob/master/hw4/images/bv_conts.png)
 
 ---
 
@@ -42,7 +42,7 @@ Results of model fitting are presented below.
 
 ### Linear Models
 
-Two linear models were fit: a large model containing most relevant predictors, and a small model containing only predictors that were found to be statistically significant in the large model.
+Two linear models were fit: a large model containing most relevant predictors, and a small model containing only predictors that were found to be statistically significant in the large model. The value shown at the end of the regression output is the mean squared error (which was also used to gauge model performance for the neural network regression below).
 
 ![Large model](https://github.com/gd32/biostat-203b-2020-winter/blob/master/hw4/images/lm_longer.png)
 
@@ -52,13 +52,15 @@ Two linear models were fit: a large model containing most relevant predictors, a
 
 A single hidden layer of 64 nodes was included in the neural network. Results are shown below:
 
-![Neural net](https://github.com/gd32/biostat-203b-2020-winter/blob/develop/hw4/images/nnr.png)
+![Neural net](https://github.com/gd32/biostat-203b-2020-winter/blob/master/hw4/images/nnr.png)
 
-The neural network regression performed slightly better than the reduced linear model. While the performance gain was minimal, it is possible that increasing the number of hidden layers or nodes would improve model performance.
+The neural network regression performed slightly better than the reduced linear model (ending MSE was about 50 for the training set). While the performance gain was small, it suggests that it is possible that increasing the number of hidden layers or nodes would improve the performance of the neural net regression. 
 
 ## Conclusion
 
 Neither model type performed optimally; however, we saw that the primary factors affecting length of stay among our chosen covariates were diagnosis priority, length of ICU stay, and survival status. It makes sense that patients who have potential to recover would remain in the hospital longer for rehabilitation or preventive measures; those who are at higher risk of death have much shorter stays (likely to due to increased severity of traumatic injury). Further optimization of the models is warranted, as inclusion of specific injury types that are associated with TSICU admission as well as with severity of injury could drastically affect performance. For example, patients with broken bones or similar injury could have noticeably different length of stay when compared to those with soft tissue or head injury.
+
+For further model development, algorithms including optimization terms (ridge/LASSO, elastic net, XGboost, etc.) would likely result in improvements in raw metrics, with the potential for overfitting and lack of generalizability. Overall, further exploration of this subject and data could lead to interesting developments.
 
 ## References
 

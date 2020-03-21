@@ -54,7 +54,7 @@ A single hidden layer of 64 nodes was included in the neural network. Results ar
 
 ![Neural net](https://github.com/gd32/biostat-203b-2020-winter/blob/master/hw4/images/nnr.png)
 
-The neural network regression performed slightly better than the reduced linear model (ending MSE was about 50 for the training set). While the performance gain was small, it suggests that it is possible that increasing the number of hidden layers or nodes would improve the performance of the neural net regression. 
+The neural network regression performed slightly better than the reduced linear model (ending MSE was about 50 for the training set after 50 epochs, maximum gain at 10 epochs). While the performance gain was small, it suggests that it is possible that increasing the number of hidden layers or nodes would improve the performance of the neural net regression. 
 
 ## Conclusion
 

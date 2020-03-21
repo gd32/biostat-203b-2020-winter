@@ -42,7 +42,7 @@ Results of model fitting are presented below.
 
 ### Linear Models
 
-Two linear models were fit: a large model containing most relevant predictors, and a small model containing only predictors that were found to be statistically significant in the large model. The value shown at the end of the regression output is the mean squared error (which was also used to gauge model performance for the neural network regression below).
+Two linear models were fit: a large model containing most relevant predictors, and a small model containing only predictors that were found to be statistically significant in the large model. The value shown at the end of the regression output is the mean squared error (which was also used to gauge model performance for the neural network regression below). In the larger model, a complete-case analysis was performed, which excluded around 400 observations with null values for some of the non-essential covariates.
 
 ![Large model](https://github.com/gd32/biostat-203b-2020-winter/blob/master/hw4/images/lm_longer.png)
 

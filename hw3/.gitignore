@@ -1,0 +1,7 @@
+news_clean.csv
+corona_clean.csv
+sci_clean.csv
+*.RData
+*.rdb
+*.rdx
+*.dcf

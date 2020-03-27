@@ -666,7 +666,8 @@ final_a = chart_labeled %>%
           filter(itemid %in% c(220050, 220059, 220179, 224167, 225309, 227243)) %>% 
           group_by(subject_id) %>%
           top_n(n = 1, wt = desc(charttime)) %>% filter(n() == 1) %>% 
-          select(subject_id, hadm_id, icustay_id, value, valuenum, valueuom) %>% arrange(subject_id) 
+          select(subject_id, hadm_id, icustay_id, value, valuenum, valueuom) %>% 
+          arrange(subject_id) 
 ```
 
 Here, we find all mentions of the `itemID`s we found previously, then group by `subject_id` and find the first chart time for each subject ID. Afterwards, we select the relevant columns we need from `chart_labeled` for the final tibble.
